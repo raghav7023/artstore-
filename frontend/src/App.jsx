@@ -2,6 +2,7 @@ import React from 'react'
 import {Route,Routes} from 'react-router-dom'
 import Home from './components/Home/Home'
 import Authentication from './components/Authentication/Authentication.jsx'
+import Order from './components/Order/Order.jsx'
 
 
 export default function App() {
@@ -10,6 +11,7 @@ export default function App() {
       <Routes>
         <Route path='/' element={<Home/>}/>
         <Route path='/signin' element={<Authentication/>}/>
+        <Route path='/Order' element ={<Order/>}/>
       </Routes>
     </div>
   )
