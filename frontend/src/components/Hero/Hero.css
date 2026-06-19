@@ -1,0 +1,294 @@
+/* ==========================================
+   Hero.css — Big Banner Section (Home Page)
+   ==========================================
+
+   Hero = Website ka sabse pehla bada section
+   Jab user website kholta hai, ye sabse pehle dikhta hai
+
+   Background: Soft gradient + decorative shapes
+   ========================================== */
+
+/* === HERO WRAPPER === */
+.hero {
+  /* Minimum height = Screen ka 90% */
+  min-height: 90vh;
+
+  /* Flexbox = Sab content vertically + horizontally center */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Text center karo */
+  text-align: center;
+
+  /* Padding = Content ko edges se thoda dur raho */
+  padding: 60px 24px;
+
+  /* Beautiful gradient background */
+  background: linear-gradient(
+    135deg,
+    #fff5f5 0%,   /* Very light pink — top left */
+    #fdf4ee 50%,  /* Warm peach — middle */
+    #f8f0ff 100%  /* Soft lavender — bottom right */
+  );
+
+  /* position: relative — decorative shapes ke liye parent */
+  position: relative;
+  overflow: hidden; /* Shapes bahar na jaayein */
+}
+
+/* === DECORATIVE CIRCLES ===
+   Ye circles page pe artistic feel dete hain
+   ::before aur ::after = CSS se extra elements add karo bina HTML ke */
+.hero::before {
+  content: '';  /* Empty content — bas visual element hai */
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  border-radius: 50%; /* Circle */
+  background: radial-gradient(
+    circle,
+    rgba(212, 99, 106, 0.08) 0%,
+    transparent 70%
+  );
+  top: -150px;
+  right: -150px;
+  pointer-events: none; /* Mouse events pe react nahi karega */
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(139, 94, 131, 0.08) 0%,
+    transparent 70%
+  );
+  bottom: -100px;
+  left: -100px;
+  pointer-events: none;
+}
+
+/* === HERO CONTENT ===
+   z-index: 1 = Decorative circles ke upar dikhega */
+.hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 700px;
+}
+
+/* === BADGE (Small label above heading) === */
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full); /* Pill shape */
+  font-size: 0.85rem;
+  color: var(--pink);
+  font-weight: 500;
+  margin-bottom: 24px;
+  box-shadow: var(--shadow-sm);
+
+  /* Fade in + slide down animation */
+  animation: fadeDown 0.6s ease both;
+}
+
+/* === HERO HEADING (Big Title) === */
+.hero-title {
+  font-family: var(--font-heading); /* Playfair Display = elegant serif font */
+  font-size: clamp(2.2rem, 5vw, 3.8rem);
+  /* clamp(min, preferred, max) = Responsive font size
+     min: 2.2rem (mobile), max: 3.8rem (desktop) */
+
+  line-height: 1.2;
+  color: var(--text);
+  margin-bottom: 20px;
+
+  /* Fade in animation */
+  animation: fadeDown 0.7s ease 0.1s both;
+  /* 0.1s delay = Badge ke baad thoda baad aaye */
+}
+
+/* Pink highlighted word */
+.hero-title span {
+  color: var(--pink);
+  position: relative;
+
+  /* Underline decoration */
+  text-decoration: underline;
+  text-decoration-color: rgba(212, 99, 106, 0.3);
+  text-underline-offset: 6px;
+}
+
+/* === HERO DESCRIPTION === */
+.hero-desc {
+  font-size: 1.1rem;
+  color: var(--text-light);
+  max-width: 520px;
+  margin: 0 auto 36px; /* auto = horizontally center */
+  line-height: 1.7;
+  animation: fadeDown 0.8s ease 0.2s both;
+}
+
+/* === HERO BUTTONS === */
+.hero-buttons {
+  display: flex;
+  gap: 14px;
+  justify-content: center; /* Buttons ko center karo */
+  flex-wrap: wrap; /* Small screen pe next line pe jaayein */
+  animation: fadeDown 0.9s ease 0.3s both;
+}
+
+/* Primary button (filled) */
+.hero-btn-primary {
+  padding: 14px 32px;
+  background: var(--pink);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none; /* Link pe underline nahi */
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 15px rgba(212, 99, 106, 0.35);
+
+  /* Smooth hover effect */
+  transition: transform var(--speed), box-shadow var(--speed), background var(--speed);
+}
+
+.hero-btn-primary:hover {
+  transform: translateY(-3px); /* Upar uthao */
+  box-shadow: 0 8px 25px rgba(212, 99, 106, 0.45);
+  background: var(--pink-dark);
+}
+
+/* Secondary button (outline) */
+.hero-btn-secondary {
+  padding: 14px 32px;
+  background: white;
+  color: var(--text);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform var(--speed), border-color var(--speed), box-shadow var(--speed);
+}
+
+.hero-btn-secondary:hover {
+  transform: translateY(-3px);
+  border-color: var(--pink-light);
+  box-shadow: var(--shadow-sm);
+}
+
+/* === STATS ROW ===
+   "200+ Products | 500+ Happy Customers" etc. */
+.hero-stats {
+  display: flex;
+  gap: 32px;
+  justify-content: center;
+  margin-top: 48px;
+  flex-wrap: wrap;
+  animation: fadeDown 1s ease 0.4s both;
+}
+
+.hero-stat {
+  text-align: center;
+}
+
+.hero-stat strong {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+  font-family: var(--font-heading);
+}
+
+.hero-stat span {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* Divider between stats */
+.hero-stat-divider {
+  width: 1px;
+  height: 40px;
+  background: var(--border);
+  align-self: center;
+}
+
+/* === SCROLL INDICATOR ===
+   Neeche scroll karne ka hint */
+.hero-scroll {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%); /* Horizontally center */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  animation: bounce 2s ease-in-out infinite;
+}
+
+/* === ANIMATIONS ===
+   @keyframes = Frame by frame animation define karo */
+
+/* Fade + slide down */
+@keyframes fadeDown {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Bounce up-down */
+@keyframes bounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50%       { transform: translateX(-50%) translateY(8px); }
+}
+
+/* ==========================================
+   RESPONSIVE — Mobile
+   ========================================== */
+@media (max-width: 600px) {
+  .hero {
+    min-height: 75vh;
+    padding: 40px 20px;
+  }
+
+  .hero-desc {
+    font-size: 1rem;
+  }
+
+  .hero-btn-primary,
+  .hero-btn-secondary {
+    padding: 12px 24px;
+    font-size: 0.95rem;
+  }
+
+  .hero-stat-divider {
+    display: none; /* Mobile pe dividers hide karo */
+  }
+}

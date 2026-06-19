@@ -1,59 +1,253 @@
-.order {
-    width: 450px;
-    margin: 40px auto;
-    padding: 25px;
-    border: 1px solid #ccc;
-    border-radius: 10px;
-    background: #ccc;
-    box-shadow: black;
+/* ==========================================
+   Order.css — Order Page
+   ==========================================
+
+   Ye page checkout form hai
+   User apna address, phone aur payment fill karta hai
+   ========================================== */
+
+/* === PAGE WRAPPER === */
+.order-page {
+  min-height: 100vh;
+  background: var(--bg);
 }
 
-.order h1 {
-    text-align: center;
-    margin-bottom: 20px;
-    font-family: Georgia, 'Times New Roman', Times, serif;
+/* === PAGE HEADER === */
+.order-header {
+  background: linear-gradient(135deg, #fff5f5, #fdf4ee);
+  padding: 40px 24px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
 }
 
-.order label {
-    font-size: 16px;
-    font-weight: 500;
+.order-header h1 {
+  font-family: var(--font-heading);
+  font-size: 2rem;
+  color: var(--text);
 }
 
-.order input,
-.order textarea {
+.order-header p {
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+/* === MAIN LAYOUT ===
+   Left: Form | Right: Summary */
+.order-content {
+  display: flex;
+  gap: 24px;
+  max-width: 1000px;
+  margin: 32px auto;
+  padding: 0 24px 64px;
+  align-items: flex-start;
+}
+
+/* === LEFT: ORDER FORM === */
+.order-form-box {
+  flex: 1;
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  padding: 32px;
+  box-shadow: var(--shadow-sm);
+  animation: fadeUp 0.5s ease;
+}
+
+.order-form-box h2 {
+  font-family: var(--font-heading);
+  font-size: 1.3rem;
+  color: var(--text);
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Form layout — labels + inputs */
+.order-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Label + Input group */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-light);
+}
+
+/* Text inputs */
+.form-group input,
+.form-group textarea,
+.form-group select {
+  padding: 12px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  color: var(--text);
+  background: white;
+  transition: border-color var(--speed), box-shadow var(--speed);
+  font-family: var(--font-body);
+}
+
+/* Focus state */
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  border-color: var(--pink);
+  box-shadow: 0 0 0 4px rgba(212, 99, 106, 0.1);
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: var(--text-muted);
+}
+
+/* Textarea — address field */
+.form-group textarea {
+  height: 90px;
+  resize: none; /* User resize nahi kar sakta */
+}
+
+/* === PAYMENT OPTIONS === */
+.payment-options {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Each payment option card */
+.payment-option {
+  flex: 1;
+  min-width: 100px;
+  padding: 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  text-align: center;
+  transition: all var(--speed);
+  background: white;
+}
+
+.payment-option:hover {
+  border-color: var(--pink-light);
+}
+
+.payment-option.selected {
+  border-color: var(--pink);
+  background: rgba(212, 99, 106, 0.05);
+  color: var(--pink);
+}
+
+.payment-option .pay-icon {
+  font-size: 1.5rem;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.payment-option span {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+/* === PLACE ORDER BUTTON === */
+.place-order-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--pink);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: background var(--speed), transform var(--speed);
+}
+
+.place-order-btn:hover {
+  background: var(--pink-dark);
+  transform: translateY(-2px);
+}
+
+/* === RIGHT: ORDER SUMMARY === */
+.order-summary-box {
+  width: 280px;
+  flex-shrink: 0;
+  background: white;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  position: sticky;
+  top: 90px;
+}
+
+.order-summary-box h2 {
+  font-family: var(--font-heading);
+  font-size: 1.1rem;
+  color: var(--text);
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Summary item row */
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  font-size: 0.875rem;
+  color: var(--text-light);
+}
+
+.summary-item img {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.summary-total {
+  border-top: 1.5px solid var(--border);
+  margin-top: 8px;
+  padding-top: 12px;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text);
+  display: flex;
+  justify-content: space-between;
+}
+
+/* ==========================================
+   ANIMATION
+   ========================================== */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================
+   RESPONSIVE
+   ========================================== */
+@media (max-width: 768px) {
+  .order-content {
+    flex-direction: column;
+  }
+
+  .order-summary-box {
     width: 100%;
-    padding: 10px;
-    margin-top: 5px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    box-sizing: border-box;
-}
+    position: static;
+  }
 
-.order textarea {
-    height: 80px;
-    resize: none;
-}
-
-.order h3 {
-    margin-top: 20px;
-}
-
-.order p {
-    margin: 5px 0;
-}
-
-.order button {
-    width: 100%;
-    padding: 12px;
-    margin-top: 15px;
-    border: none;
-    border-radius: 5px;
-    background: black;
-    color: white;
-    cursor: pointer;
-    font-size: 16px;
-}
-
-.order button:hover {
-    opacity: 0.8;
+  .order-form-box {
+    padding: 20px;
+  }
 }

@@ -1,74 +1,231 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
+/* ==========================================
+   Navbar.css — Top Navigation Bar
+   ==========================================
 
+   Navbar = Website ke upar ki navigation bar
+   Ismein: Logo | Search | Cart | Sign In
+
+   position: sticky = Scroll karo, navbar upar hi rahe
+   ========================================== */
+
+/* === NAVBAR WRAPPER === */
+/* nav = HTML semantic element for navigation */
 .navbar {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 15px;
-    padding: 15px;
-    list-style: none;
-    background: white;
-    border-bottom: 1px solid #ddd;
+  /* sticky = Page scroll karo toh bhi top pe rahe */
+  position: sticky;
+  top: 0;
+
+  /* z-index = Ye sab cheezoon ke upar dikhega (high number = upar) */
+  z-index: 100;
+
+  background: rgba(250, 248, 245, 0.92); /* Thoda transparent */
+
+  /* backdrop-filter = peeche ka content blur ho — frosted glass effect */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px); /* Safari ke liye */
+
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
 }
 
-.artstore img {
-    width: 180px;
-    height: auto;
+/* === INNER CONTAINER ===
+   Ye navbar ke content ko center karta hai
+   aur side mein padding deta hai */
+.navbar-inner {
+  max-width: 1200px;   /* Maximum width — bade screens pe stretch nahi hoga */
+  margin: 0 auto;      /* 0 upar-neeche, auto left-right = CENTER */
+  padding: 14px 24px;  /* 14px upar-neeche, 24px left-right */
+
+  display: flex;           /* Flexbox = Items ek line mein lagao */
+  align-items: center;     /* Vertically center karo */
+  justify-content: space-between; /* Logo left, icons right */
+  gap: 16px;
 }
 
-.search {
-    width: 280px;
-    max-width: 90vw;
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 25px;
-    outline: none;
-    font-size: 15px;
+/* === LOGO AREA === */
+.navbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none; /* Link pe underline nahi chahiye */
+  flex-shrink: 0;        /* Logo shrink nahi hoga */
 }
 
-.search:focus {
-    border-color: #2563eb;
+/* Crochet emoji icon */
+.navbar-logo-icon {
+  font-size: 1.8rem;
+  line-height: 1;
 }
 
-.icons {
-    display: flex;
-    align-items: center;
-    gap: 25px;
+/* Logo text */
+.navbar-logo-text {
+  display: flex;
+  flex-direction: column; /* Text neeche neeche */
+  line-height: 1.1;
 }
 
-.icons img {
-    width: 28px;
-    height: 28px;
+.navbar-logo-text span:first-child {
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.3px;
 }
 
-.signin {
-    text-decoration: none;
-    color: black;
-    font-size: 16px;
-    font-weight: 500;
+.navbar-logo-text span:last-child {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-weight: 400;
 }
 
-.signin:hover {
-    color: #2563eb;
+/* === SEARCH BAR === */
+/* Ye wrapper hai search input ke liye */
+.navbar-search {
+  flex: 1;          /* Baaki space le lo */
+  max-width: 380px; /* But maximum 380px */
+  position: relative;
 }
 
-@media(min-width:768px) {
+/* Search icon — input ke andar left side pe */
+.navbar-search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%); /* Vertically bilkul center */
+  font-size: 1rem;
+  pointer-events: none; /* Click events block nahi karega */
+  color: var(--text-muted);
+}
 
-    .navbar {
-        flex-direction: row;
-        justify-content: space-between;
-        padding: 12px 30px;
-    }
+/* Search input field */
+.navbar-search input {
+  width: 100%;
+  padding: 10px 16px 10px 40px; /* Left padding zyada — icon ke liye space */
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-full); /* Pill shape */
+  background: white;
+  font-size: 0.9rem;
+  color: var(--text);
+  transition: border-color var(--speed), box-shadow var(--speed);
+}
 
-    .search {
-        width: 350px;
-    }
+/* Jab input pe click/focus karo */
+.navbar-search input:focus {
+  border-color: var(--pink);
+  box-shadow: 0 0 0 4px rgba(212, 99, 106, 0.12);
+}
 
-    .icons {
-        gap: 20px;
-    }
+.navbar-search input::placeholder {
+  color: var(--text-muted);
+}
+
+/* === RIGHT SIDE ICONS === */
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0; /* Icons shrink nahi honge */
+}
+
+/* Common style for all icon buttons */
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-full);
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-light);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background var(--speed), color var(--speed);
+  text-decoration: none; /* Link pe underline nahi */
+  white-space: nowrap;   /* Text wrap nahi hoga */
+}
+
+.nav-btn:hover {
+  background: var(--bg-soft);
+  color: var(--pink);
+}
+
+/* Icon inside button */
+.nav-btn .icon {
+  font-size: 1.1rem;
+}
+
+/* Special style — Sign In button (highlighted) */
+.nav-btn-primary {
+  background: var(--pink);
+  color: white;
+  padding: 8px 20px;
+}
+
+.nav-btn-primary:hover {
+  background: var(--pink-dark);
+  color: white;
+}
+
+/* === MOBILE HAMBURGER ===
+   Chhoti screens pe 3 lines wala menu button */
+.hamburger {
+  display: none; /* Default pe hide */
+  flex-direction: column;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.hamburger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--text);
+  border-radius: 2px;
+  transition: all var(--speed);
+}
+
+/* ==========================================
+   RESPONSIVE — Mobile ke liye
+   max-width: 768px = Screen 768px se chhoti ho toh ye apply ho
+   ========================================== */
+@media (max-width: 768px) {
+  .navbar-inner {
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  /* Search bar puri width le */
+  .navbar-search {
+    order: 3;       /* Search neeche aajaye */
+    max-width: 100%;
+    flex: 1 1 100%; /* Puri line le lo */
+  }
+
+  /* Text hide karo buttons mein, sirf icon dikhao */
+  .nav-btn .btn-text {
+    display: none;
+  }
+
+  .nav-btn {
+    padding: 8px 10px;
+  }
+
+  .nav-btn-primary {
+    padding: 8px 14px;
+  }
+
+  .nav-btn-primary .btn-text {
+    display: inline; /* Sign In text dikhao mobile pe bhi */
+  }
+}
+.navbar-logo img {
+  height: 45px;
+  width: auto;
+  display: block;
+  object-fit: contain;
 }

@@ -1,0 +1,15 @@
+# Node modules - kabhi push mat karo! Bahut bada hota hai
+node_modules/
+
+# Environment variables - SECRETS hain! NEVER push karo
+.env
+.env.local
+.env.production
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db

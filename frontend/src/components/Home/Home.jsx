@@ -1,52 +1,130 @@
-import React from 'react'
-import Navbar from '../Navbar/Navbar.jsx'
-import Hero from '../Hero/Hero.jsx'
+// ==========================================
+// Home.jsx — Home Page
+// ==========================================
+
+import React from 'react';
+import { Link } from 'react-router-dom';
+import Navbar from '../Navbar/Navbar.jsx';
+import Hero from '../Hero/Hero.jsx';
+import './Home.css';
+
+// Sample products data — baad mein backend se aayega
+// Abhi ke liye hardcoded rakhte hain seekhne ke liye
+const featuredProducts = [
+  {
+    id: 1,
+    name: 'Sunflower Bouquet',
+    category: 'Bouquets',
+    price: 299,
+    image: '/sunflower.jpeg',
+  },
+  {
+    id: 2,
+    name: 'Crochet Flower Pot',
+    category: 'Decorations',
+    price: 499,
+    image: '/flowers.jpeg',
+  },
+  {
+    id: 3,
+    name: 'Rabbit Keychain',
+    category: 'Keychains',
+    price: 199,
+    image: '/rabbit.jpeg',
+  },
+  {
+    id: 4,
+    name: 'Rose Bouquet',
+    category: 'Bouquets',
+    price: 349,
+    image: '/sunflower.jpeg',
+  },
+];
+
+// Categories list
+const categories = [
+  { emoji: '🌸', name: 'Crochet Flowers', count: '12 items' },
+  { emoji: '💐', name: 'Bouquets',         count: '8 items' },
+  { emoji: '🔑', name: 'Keychains',        count: '15 items' },
+  { emoji: '🎁', name: 'Gift Sets',         count: '6 items' },
+  { emoji: '🏡', name: 'Decorations',       count: '10 items' },
+  { emoji: '✨', name: 'Custom Orders',     count: 'Any item' },
+];
 
 export default function Home() {
   return (
     <div>
 
+      {/* Navigation Bar */}
       <Navbar />
 
+      {/* Hero Banner */}
       <Hero />
 
-      <div className='welcome'>
-        <h1>Welcome to Art Store</h1>
-        <p>Discover unique paintings and artworks.</p>
+      {/* ====== CATEGORIES SECTION ====== */}
+      <div className="categories-section">
+        <div className="section-header">
+          <span className="section-tag">Browse By Type</span>
+          <h2 className="section-title">Shop by Category</h2>
+          <p className="section-subtitle">
+            Find the perfect handmade piece for every occasion
+          </p>
+        </div>
+
+        <div className="categories-grid">
+          {/* .map() = Array ke har item ko card mein convert karo */}
+          {categories.map((cat, index) => (
+            <Link to="/products" className="category-card" key={index}>
+              <span className="category-emoji">{cat.emoji}</span>
+              <h3>{cat.name}</h3>
+              <p>{cat.count}</p>
+            </Link>
+          ))}
+        </div>
       </div>
 
-      <div className='products'>
-
-        <div className='card'>
-          <img src='/art1.jpg' alt='art' />
-          <h3>Abstract Art</h3>
-          <p>₹1200</p>
-          <button>Buy Now</button>
+      {/* ====== FEATURED PRODUCTS SECTION ====== */}
+      <div className="products-section">
+        <div className="section-header">
+          <span className="section-tag">Bestsellers</span>
+          <h2 className="section-title">Featured Collection</h2>
+          <p className="section-subtitle">
+            Our most loved handmade creations, picked just for you
+          </p>
         </div>
 
-        <div className='card'>
-          <img src='/art2.jpg' alt='art' />
-          <h3>Landscape Art</h3>
-          <p>₹1500</p>
-          <button>Buy Now</button>
+        <div className="products-grid">
+          {featuredProducts.map((product) => (
+            <div className="product-card" key={product.id}>
+
+              {/* Product Image */}
+              <div className="product-card-img">
+                <img src={product.image} alt={product.name} />
+              </div>
+
+              {/* Product Info */}
+              <div className="product-card-body">
+                <p className="product-card-tag">{product.category}</p>
+                <h3>{product.name}</h3>
+
+                <div className="product-card-footer">
+                  <span className="product-price">₹{product.price}</span>
+                  <button className="product-buy-btn">Add to Cart</button>
+                </div>
+              </div>
+
+            </div>
+          ))}
         </div>
 
-        <div className='card'>
-          <img src='/art3.jpg' alt='art' />
-          <h3>Modern Art</h3>
-          <p>₹1800</p>
-          <button>Buy Now</button>
+        {/* View All button */}
+        <div className="view-all-wrapper">
+          <Link to="/products" className="view-all-btn">
+            View All Products →
+          </Link>
         </div>
-
-        <div className='card'>
-          <img src='/art4.jpg' alt='art' />
-          <h3>Nature Art</h3>
-          <p>₹2000</p>
-          <button>Buy Now</button>
-        </div>
-
       </div>
 
     </div>
-  )
+  );
 }

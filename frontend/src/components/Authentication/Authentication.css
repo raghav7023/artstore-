@@ -1,80 +1,403 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+/* ==========================================
+   Authentication.css - Login/Signup Page Styles
+   ==========================================
+   Purpose: Beautiful auth page ke liye CSS
+   Design: Soft gradient background, glassmorphism card
+   ========================================== */
+
+/* === PAGE WRAPPER === 
+   Full page ko cover karta hai aur form ko center mein rakhta hai
+   min-height: 100vh = Screen ki poori height use karo
+   display: flex + align-items: center = Vertically center karo
+*/
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  
+  /* Beautiful soft gradient background */
+  background: linear-gradient(
+    135deg,
+    #faf0f0 0%,    /* Very light pink */
+    #fdf4ee 40%,   /* Warm peach */
+    #f5f0fa 100%   /* Soft lavender */
+  );
+  
+  /* Background pattern for artistic feel */
+  position: relative;
+  overflow: hidden;
 }
 
-body {
-    min-height: 100vh;
-    font-family: Inter, system-ui, sans-serif;
-    background: rgb(254, 254, 254);
-    color: #000000;
+/* Decorative background circles (blurred) */
+.auth-page::before {
+  content: '';
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(212, 99, 106, 0.12) 0%, transparent 70%);
+  top: -100px;
+  right: -100px;
+  pointer-events: none; /* Click events block nahi karega */
 }
 
-.form {
-    width: min(92vw, 420px);
-    margin: 8vh auto;
-    padding: 2.2rem 1.8rem;
-    background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
-    border: 1px solid rgba(0, 0, 0, 0.2);
-    border-radius: 24px;
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.337);
+.auth-page::after {
+  content: '';
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(139, 94, 131, 0.10) 0%, transparent 70%);
+  bottom: -80px;
+  left: -80px;
+  pointer-events: none;
 }
 
-.signup_items {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+/* === MAIN CARD ===
+   Glassmorphism effect: translucent white card with backdrop blur
+   backdrop-filter = Background ko blur karta hai card ke peeche
+*/
+.auth-card {
+  width: 100%;
+  max-width: 440px;      /* Max width 440px, chhota screen pe 100% */
+  background: rgba(255, 255, 255, 0.85); /* 85% opaque white */
+  backdrop-filter: blur(20px);           /* Frosted glass effect */
+  -webkit-backdrop-filter: blur(20px);   /* Safari ke liye */
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 28px;
+  padding: 40px 36px;
+  box-shadow: 
+    0 8px 32px rgba(212, 99, 106, 0.12),  /* Pink shadow */
+    0 2px 8px rgba(0, 0, 0, 0.06);         /* Subtle dark shadow */
+  position: relative;
+  z-index: 1; /* Decorative circles ke upar */
+  
+  /* Slide in animation jab page load ho */
+  animation: slideInUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.head {
-    text-align: center;
-    margin-bottom: 1rem;
-    color: #000000;
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
-.label {
-    display: block;
-    color:#000000;
-    margin-bottom: 0.35rem;
-    font-size: 0.95rem;
+/* === LOGO AREA === */
+.auth-logo {
+  text-align: center;
+  margin-bottom: 28px;
 }
 
-.input {
-    width: 100%;
-    padding: 0.95rem 1rem;
-    border: 1px solid rgba(0, 0, 0, 0.3);
-    border-radius: 16px;
-    background: rgba(109, 108, 108, 0.12);
-    color:#000000;
-    font-size: 1rem;
-    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+.auth-logo-icon {
+  font-size: 2.5rem;     /* Big emoji/icon */
+  display: block;
+  margin-bottom: 8px;
+  
+  /* Floating animation */
+  animation: float 3s ease-in-out infinite;
 }
 
-.input:focus {
-    outline: none;
-    border-color: #040404;
-    box-shadow: 0 0 0 6px rgba(209, 206, 206, 0.18);
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }
 
-.button {
-    width: 100%;
-    padding: 0.95rem 1rem;
-    border: 1px solid rgba(0, 0, 0, 0.7);
-    border-radius: 16px;
-    background: rgba(255, 255, 255, 0.16);
-    color: #000000;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+.auth-logo h1 {
+  font-family: 'Playfair Display', serif;  /* Elegant font */
+  font-size: 1.6rem;
+  color: #2d2420;
+  font-weight: 700;
+  letter-spacing: -0.5px;
 }
 
-.button:hover {
-    background: rgba(255, 255, 255, 0.28);
-    border-color: rgba(0, 0, 0, 0.9);
-    transform: translateY(-1px);
+.auth-logo p {
+  font-size: 0.85rem;
+  color: #9e8e89;
+  margin-top: 2px;
 }
 
-.button:active {
-    transform: translateY(0);
+/* === TAB SWITCHER (Login / Signup) ===
+   Do buttons: Login aur Signup
+   Active tab highlighted hoti hai
+*/
+.auth-tabs {
+  display: flex;
+  background: #f5f0eb;
+  border-radius: 14px;
+  padding: 4px;
+  margin-bottom: 28px;
+  gap: 4px;
+}
+
+.auth-tab {
+  flex: 1;               /* Dono tabs equal width */
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  background: transparent;
+  color: #9e8e89;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  border: none;
+}
+
+/* Active tab ko highlight karo */
+.auth-tab.active {
+  background: white;
+  color: #d4636a;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  font-weight: 600;
+}
+
+.auth-tab:hover:not(.active) {
+  color: #6b5c57;
+}
+
+/* === FORM STYLES === */
+.auth-form {
+  display: flex;
+  flex-direction: column; /* Items neeche neeche */
+  gap: 18px;              /* Har item ke beech space */
+}
+
+/* === FORM GROUP (Label + Input) === */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-label {
+  font-size: 0.875rem;    /* 14px */
+  font-weight: 500;
+  color: #6b5c57;
+  padding-left: 2px;
+}
+
+/* === INPUT FIELDS === */
+.form-input {
+  width: 100%;
+  padding: 13px 16px;
+  border: 1.5px solid #e8e0d8;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  color: #2d2420;
+  background: rgba(255, 255, 255, 0.8);
+  
+  /* Smooth transition jab focus ho */
+  transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+}
+
+/* Focus state - jab user input mein click kare */
+.form-input:focus {
+  border-color: #d4636a;   /* Pink border */
+  background: white;
+  box-shadow: 0 0 0 4px rgba(212, 99, 106, 0.12); /* Soft glow */
+}
+
+/* Error state - jab input invalid ho */
+.form-input.error {
+  border-color: #e74c3c;
+  box-shadow: 0 0 0 4px rgba(231, 76, 60, 0.10);
+}
+
+/* Input placeholder color */
+.form-input::placeholder {
+  color: #c5b8b4;
+}
+
+/* === PASSWORD WRAPPER (Input + Show/Hide Button) === */
+.password-wrapper {
+  position: relative; /* Positioned children ke liye parent */
+}
+
+.password-toggle {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9e8e89;
+  font-size: 1.1rem;
+  padding: 4px;
+  transition: color 0.2s ease;
+  line-height: 1;
+}
+
+.password-toggle:hover {
+  color: #d4636a;
+}
+
+/* Password input mein right padding do - button se overlap na ho */
+.password-wrapper .form-input {
+  padding-right: 48px;
+}
+
+/* === ERROR MESSAGE === */
+.form-error {
+  font-size: 0.8rem;
+  color: #e74c3c;
+  padding-left: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* === API ERROR / SUCCESS ALERTS === */
+.alert {
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: center;
+  
+  /* Shake animation for errors */
+  animation: alertIn 0.3s ease;
+}
+
+@keyframes alertIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.alert-error {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.alert-success {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+/* === SUBMIT BUTTON === */
+.btn-primary {
+  width: 100%;
+  padding: 14px;
+  border-radius: 14px;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  
+  /* Beautiful gradient button */
+  background: linear-gradient(135deg, #d4636a 0%, #c04a6a 100%);
+  color: white;
+  border: none;
+  cursor: pointer;
+  
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 15px rgba(212, 99, 106, 0.35);
+  position: relative;
+  overflow: hidden;
+  margin-top: 4px;
+}
+
+/* Hover effect */
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(212, 99, 106, 0.45);
+  background: linear-gradient(135deg, #c85560 0%, #b0405e 100%);
+}
+
+/* Active/Click effect */
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(212, 99, 106, 0.3);
+}
+
+/* Disabled state - form submit ho raha hai */
+.btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Loading spinner inside button */
+.btn-primary .spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* === DIVIDER === */
+.auth-divider {
+  text-align: center;
+  color: #c5b8b4;
+  font-size: 0.8rem;
+  position: relative;
+  margin: 4px 0;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 40%;
+  height: 1px;
+  background: #e8e0d8;
+}
+.auth-divider::before { left: 0; }
+.auth-divider::after  { right: 0; }
+
+/* === FOOTER TEXT === */
+.auth-footer {
+  text-align: center;
+  font-size: 0.85rem;
+  color: #9e8e89;
+  margin-top: 8px;
+}
+
+.auth-footer a,
+.auth-footer button {
+  color: #d4636a;
+  font-weight: 600;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: inherit;
+  font-family: inherit;
+  transition: color 0.2s ease;
+}
+
+.auth-footer a:hover,
+.auth-footer button:hover {
+  color: #b54a51;
+  text-decoration: underline;
+}
+
+/* === RESPONSIVE === 
+   Mobile pe card padding thodi kam karo
+*/
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 28px 20px;
+    border-radius: 20px;
+  }
+  
+  .auth-logo h1 {
+    font-size: 1.4rem;
+  }
 }

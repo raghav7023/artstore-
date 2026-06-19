@@ -1,42 +1,63 @@
-import React, { useState } from 'react'
-import {Link} from 'react-router-dom'
-import './Navbar.css'
+// ==========================================
+// Navbar.jsx — Top Navigation Bar
+// ==========================================
+
+import React from "react";
+import { Link, useLocation } from "react-router-dom";
+import "./Navbar.css";
 
 export default function Navbar() {
-    const[menu,setmenu]=useState("")
+
+  // useLocation = current URL kya hai ye batata hai
+  // Example: user /products pe hai toh pathname = "/products"
+  const location = useLocation();
+
   return (
-      <nav>
-          <ul className='navbar'>
+    <nav className="navbar">
+      <div className="navbar-inner">
 
-              <li className='artstore'>
-                  <Link to='/'>
-                      <img src='/artstore_logo.jpeg' alt='artstore logo' />
-                  </Link>
-              </li>
+        {/* ====== LOGO ====== */}
+        <Link to="/" className="navbar-logo">
+          <span className="navbar-logo-icon"><img src='/artstore_logo.jpeg' alt="artstorelogo"/></span>
+          <div className="navbar-logo-text">
+            <span>Art Store</span>
+            <span>Handmade with love</span>
+          </div>
+        </Link>
 
-              <li>
-                  <input
-                      className='search'
-                      type='text'
-                      placeholder='Search products...'
-                  />
-              </li>
+        {/* ====== SEARCH BAR ====== */}
+        <div className="navbar-search">
+          <span className="navbar-search-icon">🔍</span>
+          <input
+            type="text"
+            placeholder="Search crochet flowers, keychains..."
+          />
+        </div>
 
-              <li className='icons'>
-                  <Link to='/cart'>
-                      <img src='/carticon.png' alt='cart' />
-                  </Link>
+        {/* ====== RIGHT SIDE BUTTONS ====== */}
+        <div className="navbar-actions">
 
-                  <Link to='/order'>
-                      <img src='/ordericon.png' alt='order' />
-                  </Link>
+          {/* Products button */}
+          <Link to="/products" className="nav-btn">
+            <span className="icon">🛍️</span>
+            <span className="btn-text">Shop</span>
+          </Link>
 
-                  <Link to='/signin' className='signin'>
-                      Sign In
-                  </Link>
-              </li>
+          {/* Cart button */}
+          <Link to="/cart" className="nav-btn">
+            <span className="icon">🛒</span>
+            <span className="btn-text">Cart</span>
+          </Link>
 
-          </ul>
-      </nav>
-  )
+          {/* Sign In button (highlighted) */}
+          <Link to="/signin" className="nav-btn nav-btn-primary">
+            <span className="icon">✨</span>
+            <span className="btn-text">Sign In</span>
+          </Link>
+
+        </div>
+
+      </div>
+    </nav>
+  );
 }
