@@ -12,10 +12,10 @@ const allProducts = [
   { id: 1, name: 'Sunflower Bouquet',    category: 'Bouquets',      price: 299, image: '/sunflower.jpeg' },
   { id: 2, name: 'Crochet Flower Pot',   category: 'Decorations',   price: 499, image: '/flowers.jpeg'   },
   { id: 3, name: 'Rabbit Keychain',      category: 'Keychains',     price: 199, image: '/rabbit.jpeg'    },
-  { id: 4, name: 'Rose Bouquet',         category: 'Bouquets',      price: 349, image: '/sunflower.jpeg' },
+  { id: 4, name: 'Rose Bouquet',         category: 'Bouquets',      price: 349, image: '/ower.jpeg' },
   { id: 5, name: 'Mini Cactus Plant',    category: 'Decorations',   price: 249, image: '/flowers.jpeg'   },
   { id: 6, name: 'Heart Keychain',       category: 'Keychains',     price: 149, image: '/rabbit.jpeg'    },
-  { id: 7, name: 'Gift Hamper',          category: 'Gift Sets',     price: 699, image: '/sunflower.jpeg' },
+  { id: 7, name: 'Gift Hamper',          category: 'Gift Sets',     price: 699, image: '/gift.jpeg' },
   { id: 8, name: 'Lavender Flowers',     category: 'Flowers',       price: 179, image: '/flowers.jpeg'   },
 ];
 

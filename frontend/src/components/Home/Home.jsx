@@ -37,17 +37,16 @@ const featuredProducts = [
     name: 'Rose Bouquet',
     category: 'Bouquets',
     price: 349,
-    image: '/sunflower.jpeg',
+    // image: '',
   },
 ];
 
 // Categories list
 const categories = [
-  { emoji: '🌸', name: 'Crochet Flowers', count: '12 items' },
-  { emoji: '💐', name: 'Bouquets',         count: '8 items' },
-  { emoji: '🔑', name: 'Keychains',        count: '15 items' },
-  { emoji: '🎁', name: 'Gift Sets',         count: '6 items' },
-  { emoji: '🏡', name: 'Decorations',       count: '10 items' },
+  { emoji: '💐', name: 'Crochet ', count: '12 items' },
+  { emoji: '🌸', name: 'Quiling frames',         count: '8 items' },
+  { emoji: '🔑', name: 'Cards and Pun Cards',        count: '15 items' },
+  { emoji: '🎁', name: 'Hamper',         count: '6 items' },
   { emoji: '✨', name: 'Custom Orders',     count: 'Any item' },
 ];
 
