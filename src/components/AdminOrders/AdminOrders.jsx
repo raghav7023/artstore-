@@ -16,7 +16,7 @@ export default function AdminOrders() {
         try {
 
             const response = await fetch(
-                "http://localhost:2026/api/orders",
+                "https://artstore-backend.onrender.com/api/orders",
                 {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem("artstore_token")}`,
