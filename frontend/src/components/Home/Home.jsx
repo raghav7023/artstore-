@@ -20,34 +20,27 @@ const featuredProducts = [
   },
   {
     id: 2,
-    name: 'Crochet Flower Pot',
+    name: 'key Chains',
     category: 'Decorations',
-    price: 499,
-    image: '/flowers.jpeg',
+    price: 199,
+    image: '/images/keychains/k01.jpeg',
   },
   {
     id: 3,
-    name: 'Rabbit Keychain',
-    category: 'Keychains',
-    price: 199,
-    image: '/rabbit.jpeg',
-  },
-  {
-    id: 4,
-    name: 'Rose Bouquet',
-    category: 'Bouquets',
-    price: 349,
-    // image: '',
+    name: 'gift Hamper',
+    category: 'Hamper',
+    price: 299,
+    image: '/images/hamper/h06.jpeg',
   },
 ];
 
 // Categories list
 const categories = [
-  { emoji: '💐', name: 'Crochet ', count: '12 items' },
-  { emoji: '🌸', name: 'Quiling frames',         count: '8 items' },
-  { emoji: '🔑', name: 'Cards and Pun Cards',        count: '15 items' },
-  { emoji: '🎁', name: 'Hamper',         count: '6 items' },
-  { emoji: '✨', name: 'Custom Orders',     count: 'Any item' },
+  { emoji: '💐', name: 'Crochet ' },
+  { emoji: '🌸', name: 'Quiling frames' },
+  { emoji: '🔑', name: 'Cards and Pun Cards' },
+  { emoji: '🎁', name: 'Hamper' },
+  { emoji: '✨', name: 'Custom Orders', },
 ];
 
 export default function Home() {
@@ -73,7 +66,11 @@ export default function Home() {
         <div className="categories-grid">
           {/* .map() = Array ke har item ko card mein convert karo */}
           {categories.map((cat, index) => (
-            <Link to="/products" className="category-card" key={index}>
+            <Link
+              to={cat.name === "Custom Orders" ? "/custom-orders" : "/products"}
+              className="category-card"
+              key={index}
+            >
               <span className="category-emoji">{cat.emoji}</span>
               <h3>{cat.name}</h3>
               <p>{cat.count}</p>
@@ -107,8 +104,8 @@ export default function Home() {
                 <h3>{product.name}</h3>
 
                 <div className="product-card-footer">
-                  <span className="product-price">₹{product.price}</span>
-                  <button className="product-buy-btn">Add to Cart</button>
+                  {/* <span className="product-price">₹{product.price}</span> */}
+                  {/* <button className="product-buy-btn">Add to Cart</button> */}
                 </div>
               </div>
 

@@ -68,6 +68,7 @@ export const signup = async (req, res) => {
       phone: phone || '',
       role: 'user', // Default role
     });
+    console.log("✅ User Saved:", newUser);   
 
     // Step 6: JWT Token banao
     const token = createToken(newUser._id, newUser.role);

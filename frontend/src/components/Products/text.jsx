@@ -1,9 +1,9 @@
+
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import Navbar from '../Navbar/Navbar.jsx';
 import './Products.css';
-import '../Home/Home.css';
-import toast from "react-hot-toast";
+import '../Home/Home.css'; // Product card styles reuse karo
+
 // All products data — baad mein backend se fetch karenge
 const allProducts = [
   { id: 1, name: 'Gift Hamper', category: 'Hamper', price: 699, image: '/images/hamper/h01.jpeg' },
@@ -18,7 +18,7 @@ const allProducts = [
   { id: 12, name: 'Quiling frames', category: 'Quiling frames', price: 249, image: '/images/quilingframe/qf05.jpeg' },
   { id: 13, name: 'Quiling frames', category: 'Quiling frames', price: 249, image: '/images/quilingframe/qf06.jpeg' },
   { id: 14, name: 'Quiling frames', category: 'Quiling frames', price: 249, image: '/images/quilingframe/qf07.jpeg' },
-  // { id: 15, name: 'Quiling frames', category: 'Quiling frames', price: 249, image: '/images/quilingframe/qf08.jpeg' },
+  { id: 15, name: 'Quiling frames', category: 'Quiling frames', price: 249, image: '/images/quilingframe/qf08.jpeg' },
   { id: 16, name: 'Quiling frames', category: 'Quiling frames', price: 249, image: '/images/quilingframe/qf09.jpeg' },
   { id: 17, name: 'Quiling frames', category: 'Quiling frames', price: 249, image: '/images/quilingframe/qf10.jpeg' },
   { id: 18, name: 'Quiling frames', category: 'Quiling frames', price: 249, image: '/images/quilingframe/qf11.jpeg' },
@@ -28,42 +28,21 @@ const allProducts = [
   { id: 22, name: 'Quiling frames', category: 'Quiling frames', price: 249, image: '/images/quilingframe/qf15.jpeg' },
   { id: 23, name: 'Quiling frames', category: 'Quiling frames', price: 249, image: '/images/quilingframe/qf16.jpeg' },
   { id: 24, name: 'Sunflower Bouquet', category: 'Bouquets', price: 299, image: '/sunflower.jpeg' },
-  { id: 25, name: ' Keychain', category: 'Keychains', price: 199, image: '/images/keychains/k01.jpeg' },
+  { id: 25, name: 'Rabbit Keychain', category: 'Keychains', price: 199, image: '/rabbit.jpeg' },
+
+
 ];
 
+// Filter categories
 const filters = ['All', 'Bouquets', 'Keychains', 'Quiling frames', 'Hamper'];
 
 export default function Products() {
 
-  const navigate = useNavigate();
-
+  // activeFilter = kaunsa filter selected hai
   const [activeFilter, setActiveFilter] = useState('All');
 
-  // ==========================
-  // Add To Cart Function
-  // ==========================
-  const addToCart = (product) => {
-
-    let cart = JSON.parse(localStorage.getItem("cart")) || [];
-
-    const existingProduct = cart.find(item => item.id === product.id);
-
-    if (existingProduct) {
-      existingProduct.quantity += 1;
-    } else {
-      cart.push({
-        ...product,
-        quantity: 1,
-      });
-    }
-
-    localStorage.setItem("cart", JSON.stringify(cart));
-
-    toast.success(`${product.name} added to cart 🛒`);
-
-    navigate("/cart");
-  };
-
+  // Filter karo — 'All' selected ho toh sab dikhao,
+  // warna sirf us category ke products dikhao
   const filteredProducts =
     activeFilter === 'All'
       ? allProducts
@@ -72,13 +51,16 @@ export default function Products() {
   return (
     <div className="products-page">
 
+      {/* Navbar */}
       <Navbar />
 
+      {/* Page Header */}
       <div className="products-header">
         <h1>Our Handmade Collection 🧶</h1>
         <p>Every piece is crafted with love and care</p>
       </div>
 
+      {/* Filter Buttons */}
       <div className="filter-bar">
         {filters.map((filter) => (
           <button
@@ -91,51 +73,32 @@ export default function Products() {
         ))}
       </div>
 
+      {/* Products */}
       <div className="products-content">
-        <p className="products-count">
-          {filteredProducts.length} products found
-        </p>
+        <p className="products-count">{filteredProducts.length} products found</p>
 
         <div className="products-grid-full">
-
           {filteredProducts.map((product) => (
-
             <div className="product-card" key={product.id}>
 
+              {/* Image */}
               <div className="product-card-img">
                 <img src={product.image} alt={product.name} />
               </div>
 
+              {/* Info */}
               <div className="product-card-body">
-
-                <p className="product-card-tag">
-                  {product.category}
-                </p>
-
+                <p className="product-card-tag">{product.category}</p>
                 <h3>{product.name}</h3>
-
                 <div className="product-card-footer">
-
-                  <span className="product-price">
-                    ₹{product.price}
-                  </span>
-                  <button
-                    className="product-buy-btn"
-                    onClick={() => addToCart(product)}
-                  >
-                    Add to Cart
-                  </button>
-
+                  <span className="product-price">₹{product.price}</span>
+                  <button className="product-buy-btn">Add to Cart</button>
                 </div>
-
               </div>
 
             </div>
-
           ))}
-
         </div>
-
       </div>
 
     </div>

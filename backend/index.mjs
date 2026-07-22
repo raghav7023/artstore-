@@ -13,6 +13,7 @@ import { MONGODB_URL, PORT } from './Config.mjs';
 
 // Routes import karo
 import authRoutes from './src/routes/auth.routes.js';
+import orderRoutes from "./src/routes/order.routes.js";
 
 // ==========================================
 // Express App Banao
@@ -92,6 +93,8 @@ app.get('/', (req, res) => {
 // Sab auth routes /api/auth se start honge
 // Jaise: /api/auth/signup, /api/auth/signin
 app.use('/api/auth', authLimiter, authRoutes);
+app.use("/api/orders", orderRoutes);
+
 
 // ==========================================
 // 404 Handler - Unknown Routes
@@ -126,7 +129,10 @@ app.use((err, req, res, next) => {
 const startServer = async () => {
   try {
     // Pehle MongoDB se connect karo
+    // console.log("MONGODB_URL =", MONGODB_URL);
+    console.log("Type =", typeof MONGODB_URL);  
     await mongoose.connect(MONGODB_URL);
+    console.log("Connected Database:", mongoose.connection.name);
     console.log('✅ MongoDB se connection ho gaya!');
 
     // Phir server start karo

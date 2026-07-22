@@ -5,7 +5,9 @@ import Authentication from './components/Authentication/Authentication.jsx'
 import Order from './components/Order/Order.jsx'
 import Cart from './components/Cart/Cart.jsx'
 import Products from './components/Products/Products.jsx'
-
+import Customorders from './components/Customorders/Customorders.jsx';  
+import Checkout from './components/Checkout/Checkout.jsx';
+import AdminOrders from "./components/AdminOrders/AdminOrders";
 export default function App() {
   return (
     <div>
@@ -24,6 +26,9 @@ export default function App() {
 
         {/* Order Page */}
         <Route path='/order' element={<Order />} />
+        <Route path="/custom-orders" element={<Customorders />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/admin/orders" element={<AdminOrders />} />
       </Routes>
     </div>
   )

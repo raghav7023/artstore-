@@ -21,13 +21,12 @@ export default function Hero() {
         {/* Big heading */}
         <h1 className="hero-title">
           Beautiful <span>Crochet Art</span><br />
-          Made Just For You
+          ~ Handmade Gifts 
         </h1>
 
         {/* Description */}
         <p className="hero-desc">
-          Discover our collection of handmade crochet flowers, bouquets,
-          keychains, and custom gifts. Each piece is crafted with care and love. 🌸
+          Discover our collection of handmade crochet , quilling , hampers & custom gifts. 🌸
         </p>
 
         {/* Buttons */}

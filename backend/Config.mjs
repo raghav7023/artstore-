@@ -19,6 +19,7 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 // Check karo ki important values exist karti hain ya nahi
 if (!MONGODB_URL) {
   console.error('❌ ERROR: MONGODB_URL .env file mein nahi milaa!');
+ 
   process.exit(1); // Server band kar do agar DB URL nahi hai
 }
 
