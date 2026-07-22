@@ -1,0 +1,113 @@
+/* ==========================================
+   Products.css — Products Page
+   ==========================================
+
+   Ye page sab products dikhata hai
+   Filter buttons + Product grid
+   ========================================== */
+
+/* === PAGE WRAPPER === */
+.products-page {
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+/* === PAGE HEADER ===
+   Top area with title */
+.products-header {
+  background: linear-gradient(135deg, #fff5f5, #fdf4ee);
+  padding: 48px 24px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.products-header h1 {
+  font-family: var(--font-heading);
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.products-header p {
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+/* === FILTER BAR ===
+   Category filter buttons */
+.filter-bar {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;  /* Buttons wrap ho jaayein small screen pe */
+  padding: 28px 24px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* Each filter button */
+.filter-btn {
+  padding: 8px 20px;
+  border-radius: var(--radius-full); /* Pill shape */
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--speed);
+
+  /* Default style — not selected */
+  background: white;
+  color: var(--text-light);
+  border: 1.5px solid var(--border);
+}
+
+.filter-btn:hover {
+  border-color: var(--pink-light);
+  color: var(--pink);
+}
+
+/* Active/selected filter button */
+.filter-btn.active {
+  background: var(--pink);
+  color: white;
+  border-color: var(--pink);
+  box-shadow: 0 4px 12px rgba(212, 99, 106, 0.3);
+}
+
+/* === PRODUCTS GRID === */
+.products-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px 64px;
+}
+
+.products-count {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+
+/* Grid — auto responsive */
+.products-grid-full {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 24px;
+}
+
+/* ==========================================
+   RESPONSIVE
+   ========================================== */
+
+@media (max-width: 600px) {
+  .products-header {
+    padding: 32px 16px;
+  }
+
+  .products-grid-full {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .products-content {
+    padding: 0 16px 40px;
+  }
+}
