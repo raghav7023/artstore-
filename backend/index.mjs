@@ -31,11 +31,13 @@ const app = express();
 // Isliye hume explicitly allow karna padega
 app.use(
   cors({
-    origin: ['http://localhost:5173', 'http://localhost:3000'],
-    // In production, apna actual domain dalo
-    // origin: 'https://yourdomain.com'
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true, // Cookies/Auth headers allow karo
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      "https://artstore-by-raghav.vercel.app",
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
   })
 );
 
