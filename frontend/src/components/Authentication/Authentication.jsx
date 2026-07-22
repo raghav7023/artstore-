@@ -127,10 +127,9 @@ export default function Authentication() {
     try {
       // URL decide karo
       const url =
-        activeTab === 'signup'
-          ? 'http://localhost:2026/api/auth/signup'
-          : 'http://localhost:2026/api/auth/signin';
-
+        activeTab === "signup"
+          ? "https://artstore-backend.onrender.com/api/auth/signup"
+          : "https://artstore-backend.onrender.com/api/auth/signin";
       // Body decide karo
       const body =
         activeTab === 'signup'
