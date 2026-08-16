@@ -15,16 +15,16 @@
 :root {
   /* ===== COLORS ===== */
 
-  /* Primary = Main brand color (warm pink/rose) */
-  --pink:        #d4636a;
-  --pink-light:  #e8878c;
-  --pink-dark:   #b54a51;
+  /* Primary = Main brand color (royal blue) */
+  --pink:        #2F5BD3;
+  --pink-light:  #6f8fe6;
+  --pink-dark:   #1f46a8;
 
-  /* Secondary = Purple accent */
-  --purple:      #8b5e83;
+  /* Secondary = Blue accent */
+  --purple:      #4c68c5;
 
-  /* Peach accent */
-  --peach:       #e8a87c;
+  /* Soft accent */
+  --peach:       #dfe9ff;
 
   /* Backgrounds */
   --bg:          #faf8f5;   /* Warm off-white — paper feel */

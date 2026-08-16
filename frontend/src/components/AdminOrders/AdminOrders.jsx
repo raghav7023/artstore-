@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import Navbar from "../Navbar/Navbar";
 import "./AdminOrders.css";
 
@@ -7,10 +7,6 @@ export default function AdminOrders() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const user = JSON.parse(localStorage.getItem("artstore_user"));
-    useEffect(() => {
-        fetchOrders();
-    }, []);
-
     const fetchOrders = async () => {
 
         try {
@@ -41,6 +37,12 @@ export default function AdminOrders() {
         }
 
     };
+
+    useEffect(() => {
+        (async () => {
+            await fetchOrders();
+        })();
+    }, []);
 
     return (
 

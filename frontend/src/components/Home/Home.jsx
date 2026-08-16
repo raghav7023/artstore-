@@ -2,7 +2,7 @@
 // Home.jsx — Home Page
 // ==========================================
 
-import React from 'react';
+ 
 import { Link } from 'react-router-dom';
 import Navbar from '../Navbar/Navbar.jsx';
 import Hero from '../Hero/Hero.jsx';

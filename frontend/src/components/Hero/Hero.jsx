@@ -2,11 +2,13 @@
 // Hero.jsx — Big Banner Section
 // ==========================================
 
-import React from 'react';
 import { Link } from 'react-router-dom';
 import './Hero.css';
 
 export default function Hero() {
+  // Reuse auth detection from Navbar: stored user in localStorage
+  const user = JSON.parse(localStorage.getItem('artstore_user'));
+
   return (
     <section className="hero">
 
@@ -20,7 +22,7 @@ export default function Hero() {
 
         {/* Big heading */}
         <h1 className="hero-title">
-          Beautiful <span>Crochet Art</span><br />
+          Beautiful <br />
           ~ Handmade Gifts 
         </h1>
 
@@ -34,9 +36,11 @@ export default function Hero() {
           <Link to="/products" className="hero-btn-primary">
             🛍️ Shop Now
           </Link>
-          <Link to="/signin" className="hero-btn-secondary">
-            ✨ Join Us
-          </Link>
+          {!user && (
+            <Link to="/signin" className="hero-btn-secondary">
+              ✨ Join Us
+            </Link>
+          )}
         </div>
 
         {/* Stats */}

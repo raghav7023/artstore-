@@ -2,7 +2,7 @@
 // Order.jsx — Order / Checkout Page
 // ==========================================
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Navbar from '../Navbar/Navbar.jsx';
 import './Order.css';
 

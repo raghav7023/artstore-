@@ -65,7 +65,7 @@
 .form-group textarea:focus,
 .form-group select:focus {
     border-color: var(--pink);
-    box-shadow: 0 0 0 4px rgba(236, 72, 153, .15);
+    box-shadow: 0 0 0 4px rgba(47, 91, 211, .15);
 }
 
 .full-width {
@@ -87,7 +87,7 @@
 
 .place-order-btn:hover {
     transform: translateY(-3px);
-    box-shadow: 0 12px 25px rgba(236, 72, 153, .3);
+    box-shadow: 0 12px 25px rgba(47, 91, 211, .3);
 }
 
 .summary-item {

@@ -10,10 +10,13 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { MONGODB_URL, PORT } from './Config.mjs';
+import path from 'path';
+import fs from 'fs';
 
 // Routes import karo
 import authRoutes from './src/routes/auth.routes.js';
 import orderRoutes from "./src/routes/order.routes.js";
+import paymentRoutes from "./src/routes/payment.routes.js";
 
 // ==========================================
 // Express App Banao
@@ -82,6 +85,15 @@ app.use(express.urlencoded({ extended: true })); // Form data bhi handle karo
 // ==========================================
 // Ye route check karne ke liye hai ki server chal raha hai
 app.get('/', (req, res) => {
+  // If frontend build exists, serve the SPA index.html for root
+  try {
+    if (fs.existsSync(clientDist)) {
+      return res.sendFile(path.join(clientDist, 'index.html'));
+    }
+  } catch (e) {
+    // ignore and fall back to JSON
+  }
+
   res.json({
     success: true,
     message: '🎨 Art Store API is running!',
@@ -96,6 +108,21 @@ app.get('/', (req, res) => {
 // Jaise: /api/auth/signup, /api/auth/signin
 app.use('/api/auth', authLimiter, authRoutes);
 app.use("/api/orders", orderRoutes);
+app.use("/api/payments", paymentRoutes);
+
+// ==========================================
+// Serve frontend static files when built (local production test)
+// ==========================================
+const __dirname = path.resolve();
+const clientDist = path.join(__dirname, '..', 'frontend', 'dist');
+if (fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+
+  // For SPA routes, serve index.html
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(clientDist, 'index.html'));
+  });
+}
 
 
 // ==========================================

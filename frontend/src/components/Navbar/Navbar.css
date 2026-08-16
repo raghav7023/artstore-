@@ -112,7 +112,7 @@
 /* Jab input pe click/focus karo */
 .navbar-search input:focus {
   border-color: var(--pink);
-  box-shadow: 0 0 0 4px rgba(212, 99, 106, 0.12);
+  box-shadow: 0 0 0 4px rgba(47, 91, 211, 0.12);
 }
 
 .navbar-search input::placeholder {
@@ -157,13 +157,13 @@
 
 /* Special style — Sign In button (highlighted) */
 .nav-btn-primary {
-  background: var(--pink);
+background: #2F5BD3;
   color: white;
   padding: 8px 20px;
 }
 
 .nav-btn-primary:hover {
-  background: var(--pink-dark);
+  background: #2F5BD3;
   color: white;
 }
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import Navbar from "../Navbar/Navbar";
 import toast from "react-hot-toast";
 import "./Customorders.css";
@@ -19,7 +19,6 @@ export default function Customorders() {
     const [preview, setPreview] = useState(null);
 
     const handleChange = (e) => {
-
         const { name, value } = e.target;
 
         setFormData({
@@ -30,11 +29,18 @@ export default function Customorders() {
     };
 
     const handleImage = (e) => {
+        const file = e.target.files[0];
 
         setFormData({
             ...formData,
-            image: e.target.files[0],
+            image: file,
         });
+
+        if (file) {
+            setPreview(URL.createObjectURL(file));
+        } else {
+            setPreview(null);
+        }
 
     };
 
@@ -43,8 +49,6 @@ export default function Customorders() {
         e.preventDefault();
 
         toast.success("Custom Order Submitted Successfully 🎉");
-
-        console.log(formData);
 
         setFormData({
             name: "",

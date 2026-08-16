@@ -15,6 +15,8 @@ const MONGODB_URL = process.env.MONGODB_URL;
 const PORT = process.env.PORT || 2026;
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID;
+const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
 
 // Check karo ki important values exist karti hain ya nahi
 if (!MONGODB_URL) {
@@ -29,3 +31,4 @@ if (!JWT_SECRET) {
 }
 
 export { MONGODB_URL, PORT, JWT_SECRET, JWT_EXPIRES_IN };
+export { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET };

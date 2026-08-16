@@ -8,7 +8,10 @@
   "main": "index.mjs",
   "scripts": {
     "start": "node index.mjs",
-    "dev": "node --watch index.mjs"
+    "dev": "node --watch index.mjs",
+    "start:prod": "node index.mjs",
+    "pm2:start": "pm2 start ecosystem.config.cjs --env production",
+    "pm2:stop": "pm2 stop ecosystem.config.cjs"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -19,6 +22,7 @@
     "express-validator": "^7.2.1",
     "jsonwebtoken": "^9.0.2",
     "mongodb": "^7.5.0",
-    "mongoose": "^9.7.0"
+    "mongoose": "^9.7.0",
+    "razorpay": "^2.1.6"
   }
 }

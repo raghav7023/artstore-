@@ -2,7 +2,7 @@
 // Navbar.jsx — Top Navigation Bar
 // ==========================================
 
-import React from "react";
+ 
 import { Link, useNavigate } from "react-router-dom";
 import "./Navbar.css";
 
@@ -42,7 +42,7 @@ export default function Navbar() {
           </span>
 
           <div className="navbar-logo-text">
-            <span>Art Store</span>
+            {/* <span>Art Store</span> */}
             <span>Handmade with love</span>
           </div>
         </Link>

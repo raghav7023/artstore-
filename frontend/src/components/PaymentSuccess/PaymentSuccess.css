@@ -1,0 +1,12 @@
+/* Minimal styles for PaymentSuccess page */
+.payment-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: #1f2937;
+}
+.payment-success h1 {
+  color: #10b981;
+}

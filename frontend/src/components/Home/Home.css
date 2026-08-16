@@ -27,8 +27,8 @@
 .section-tag {
   display: inline-block;
   padding: 4px 14px;
-  background: rgba(212, 99, 106, 0.1); /* Light pink background */
-  color: var(--pink);
+  background: rgba(47, 91, 211, 0.1); /* Light blue background */
+  color: #2F5BD3;
   border-radius: var(--radius-full);
   font-size: 0.8rem;
   font-weight: 600;
