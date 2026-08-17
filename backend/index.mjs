@@ -17,6 +17,7 @@ import fs from 'fs';
 import authRoutes from './src/routes/auth.routes.js';
 import orderRoutes from "./src/routes/order.routes.js";
 import paymentRoutes from "./src/routes/payment.routes.js";
+import customOrderRoutes from './src/routes/customOrder.routes.js';
 
 // ==========================================
 // Express App Banao
@@ -109,6 +110,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authLimiter, authRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use('/api/custom-orders', customOrderRoutes);
 
 // ==========================================
 // Serve frontend static files when built (local production test)

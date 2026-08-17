@@ -34,9 +34,6 @@ const calculateAmountFromProducts = (products) => {
 // POST /api/payments/create-order
 export const createPaymentOrder = async (req, res) => {
   try {
-    if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
-      return res.status(500).json({ success: false, message: 'Payment gateway not configured' });
-    }
     const userId = req.user.id;
 
     const {
@@ -74,6 +71,10 @@ export const createPaymentOrder = async (req, res) => {
       });
 
       return res.status(201).json({ success: true, message: 'Order placed (COD)', order: newOrder });
+    }
+
+    if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
+      return res.status(500).json({ success: false, message: 'Payment gateway not configured' });
     }
 
     // Create Razorpay order

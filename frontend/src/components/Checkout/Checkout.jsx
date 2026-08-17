@@ -5,6 +5,8 @@ import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:2026';
+
 export default function Checkout() {
     const cartItems = JSON.parse(localStorage.getItem('cart')) || [];
 
@@ -52,7 +54,7 @@ export default function Checkout() {
         setIsProcessing(true);
 
         try {
-            const resp = await fetch('/api/payments/create-order', {
+            const resp = await fetch(`${API_BASE_URL}/api/payments/create-order`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -64,7 +66,7 @@ export default function Checkout() {
             const data = await resp.json();
             if (!data.success) throw new Error(data.message || 'Unable to create payment order');
 
-            if (data.order) {
+            if (!data.key && data.order) {
                 toast.success('Order placed (Cash on Delivery)');
                 localStorage.removeItem('cart');
                 navigate('/payment-success', { replace: true });
@@ -85,7 +87,7 @@ export default function Checkout() {
                 order_id: order.id,
                 handler: async function (response) {
                     try {
-                        const verifyResp = await fetch('/api/payments/verify', {
+                        const verifyResp = await fetch(`${API_BASE_URL}/api/payments/verify`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',

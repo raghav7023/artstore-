@@ -20,10 +20,10 @@ const featuredProducts = [
   },
   {
     id: 2,
-    name: 'key Chains',
-    category: 'Decorations',
+    name: 'flowers',
+    category: 'crochet',
     price: 199,
-    image: '/images/keychains/k01.jpeg',
+    image: '/images/flowers/flower-39.jpeg',
   },
   {
     id: 3,
@@ -32,15 +32,23 @@ const featuredProducts = [
     price: 299,
     image: '/images/hamper/h06.jpeg',
   },
+  {
+    id: 4,
+    name: 'hair accessories',
+    category: 'crochet',
+    price: 299,
+    image: '/images/hair/hair-4.jpeg',
+  },
 ];
 
 // Categories list
+// `name` is the display label, `value` is the exact category string used in products data
 const categories = [
-  { emoji: '💐', name: 'Crochet ' },
-  { emoji: '🌸', name: 'Quiling frames' },
-  { emoji: '🔑', name: 'Cards and Pun Cards' },
-  { emoji: '🎁', name: 'Hamper' },
-  { emoji: '✨', name: 'Custom Orders', },
+  { emoji: '💐', name: 'Crochet', value: 'crochet' },
+  { emoji: '🌸', name: 'Quiling frames', value: 'Quiling frames' },
+  { emoji: '🔑', name: 'Bouqets', value: 'Bouquets' },
+  { emoji: '🎁', name: 'Hamper', value: 'Hamper' },
+  { emoji: '✨', name: 'Custom Orders' },
 ];
 
 export default function Home() {
@@ -68,6 +76,7 @@ export default function Home() {
           {categories.map((cat, index) => (
             <Link
               to={cat.name === "Custom Orders" ? "/custom-orders" : "/products"}
+              state={cat.name === "Custom Orders" ? undefined : { category: cat.value || cat.name }}
               className="category-card"
               key={index}
             >

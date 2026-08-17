@@ -10,6 +10,8 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import './Authentication.css';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:2026';
+
 export default function Authentication() {
 
   // ==========================================
@@ -128,8 +130,8 @@ export default function Authentication() {
       // URL decide karo
       const url =
         activeTab === "signup"
-          ? "https://artstore-backend.onrender.com/api/auth/signup"
-          : "https://artstore-backend.onrender.com/api/auth/signin";
+          ? `${API_BASE_URL}/api/auth/signup`
+          : `${API_BASE_URL}/api/auth/signin`;
       // Body decide karo
       const body =
         activeTab === 'signup'

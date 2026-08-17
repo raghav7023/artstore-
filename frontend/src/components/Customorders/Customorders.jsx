@@ -3,6 +3,8 @@ import Navbar from "../Navbar/Navbar";
 import toast from "react-hot-toast";
 import "./Customorders.css";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:2026';
+
 export default function Customorders() {
 
     const [formData, setFormData] = useState({
@@ -44,23 +46,53 @@ export default function Customorders() {
 
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
 
         e.preventDefault();
 
-        toast.success("Custom Order Submitted Successfully 🎉");
+        const token = localStorage.getItem('artstore_token');
+        if (!token) {
+            toast.error('Please sign in before submitting a custom order.');
+            return;
+        }
 
-        setFormData({
-            name: "",
-            email: "",
-            phone: "",
-            product: "",
-            color: "",
-            budget: "",
-            delivery: "",
-            message: "",
-            image: null,
-        });
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/custom-orders`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    ...formData,
+                    budget: formData.budget ? Number(formData.budget) : 0,
+                    image: preview || '',
+                }),
+            });
+
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || 'Unable to submit custom order.');
+            }
+
+            toast.success('Custom Order Submitted Successfully 🎉');
+
+            setFormData({
+                name: "",
+                email: "",
+                phone: "",
+                product: "",
+                color: "",
+                budget: "",
+                delivery: "",
+                message: "",
+                image: null,
+            });
+            setPreview(null);
+        } catch (error) {
+            console.error('Custom order submit error:', error);
+            toast.error(error.message || 'Unable to submit custom order.');
+        }
 
     };
 

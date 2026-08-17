@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import Navbar from "../Navbar/Navbar";
 import "./AdminOrders.css";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:2026';
+
 export default function AdminOrders() {
 
     const [orders, setOrders] = useState([]);
@@ -12,7 +14,7 @@ export default function AdminOrders() {
         try {
 
             const response = await fetch(
-                "https://artstore-backend.onrender.com/api/orders",
+                `${API_BASE_URL}/api/orders`,
                 {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem("artstore_token")}`,
