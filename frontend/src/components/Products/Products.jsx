@@ -30,9 +30,9 @@ const allProducts = [
   { id: 25, name: 'Quiling frames', category: 'Quiling frames', price: 3499, image: '/images/quilingframe/qf18.jpeg' },
   { id: 26, name: 'Quiling frames', category: 'Quiling frames', price: 1599, image: '/images/quilingframe/qf19.jpeg' },
   { id: 27, name: 'Quiling frames', category: 'Quiling frames', price: 3499, image: '/images/quilingframe/qf20.jpeg' },
-  { id: 27, name: 'Quiling frames', category: 'Quiling frames', price: 1999, image: '/images/quilingframe/qf21.jpeg' },
-  { id: 27, name: 'Quiling frames', category: 'Quiling frames', price: 999, image: '/images/quilingframe/qf22.jpeg' },
-  { id: 28, name: 'Quiling frames', category: 'Quiling frames', price: 899, image: '/images/quilingframe/qf23.jpeg' },
+  { id: 28, name: 'Quiling frames', category: 'Quiling frames', price: 1999, image: '/images/quilingframe/qf21.jpeg' },
+  { id: 29, name: 'Quiling frames', category: 'Quiling frames', price: 999, image: '/images/quilingframe/qf22.jpeg' },
+  { id: 200, name: 'Quiling frames', category: 'Quiling frames', price: 899, image: '/images/quilingframe/qf23.jpeg' },
 
 
 
