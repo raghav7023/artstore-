@@ -107,10 +107,10 @@ const allProducts = [
 
 
     { id: 400, name: 'crochet hair accessories', category: 'crochet', subcategory: 'crochet Bag', price: 199, image: '/images/crochetbag/cb1.jpeg' },
-    { id: 400, name: 'crochet hair accessories', category: 'crochet', subcategory: 'crochet Bag', price: 199, image: '/images/crochetbag/cb2.jpeg' },
-    { id: 400, name: 'crochet hair accessories', category: 'crochet', subcategory: 'crochet Bag', price: 199, image: '/images/crochetbag/cb3.jpeg' },
-    { id: 400, name: 'crochet hair accessories', category: 'crochet', subcategory: 'crochet Bag', price: 199, image: '/images/crochetbag/cb4.jpeg' },
-    { id: 400, name: 'crochet hair accessories', category: 'crochet', subcategory: 'crochet Bag', price: 199, image: '/images/crochetbag/cb5.jpeg' },
+    { id: 401, name: 'crochet hair accessories', category: 'crochet', subcategory: 'crochet Bag', price: 199, image: '/images/crochetbag/cb2.jpeg' },
+    { id: 402, name: 'crochet hair accessories', category: 'crochet', subcategory: 'crochet Bag', price: 199, image: '/images/crochetbag/cb3.jpeg' },
+    { id: 403, name: 'crochet hair accessories', category: 'crochet', subcategory: 'crochet Bag', price: 199, image: '/images/crochetbag/cb4.jpeg' },
+    { id: 404, name: 'crochet hair accessories', category: 'crochet', subcategory: 'crochet Bag', price: 199, image: '/images/crochetbag/cb5.jpeg' },
 
 ];
 const filters = ['All', 'Bouquets', 'crochet', 'Quiling frames', 'Hamper'];
