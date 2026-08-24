@@ -1,12 +1,4 @@
-import { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
-import toast from 'react-hot-toast';
-import Navbar from '../Navbar/Navbar.jsx';
-import './Products.css';
-import '../Home/Home.css';
-
-// Product listing data used by the existing products page.
-const allProducts = [
+export const products = [
   { id: 1, name: 'Gift Hamper', category: 'Hamper', price: 299, image: '/images/hamper/h01.jpeg' },
   { id: 2, name: 'Birthday Hamper', category: 'Hamper', price: 5899, image: '/images/hamper/h02.jpeg' },
   { id: 3, name: 'Gift Hamper', category: 'Hamper', price: 3299, image: '/images/hamper/h03.jpeg' },
@@ -26,16 +18,11 @@ const allProducts = [
   { id: 21, name: 'Quiling frames', category: 'Quiling frames', price: 2499, image: '/images/quilingframe/qf14.jpeg' },
   { id: 22, name: 'Quiling frames', category: 'Quiling frames', price: 2699, image: '/images/quilingframe/qf15.jpeg' },
   { id: 23, name: 'Quiling frames', category: 'Quiling frames', price: 1899, image: '/images/quilingframe/qf16.jpeg' },
-  { id: 24, name: 'Quiling frames', category: 'Quiling frames', price: 1499, image: '/images/quilingframe/qf17.jpeg' },
-  { id: 25, name: 'Quiling frames', category: 'Quiling frames', price: 3499, image: '/images/quilingframe/qf18.jpeg' },
-  { id: 26, name: 'Quiling frames', category: 'Quiling frames', price: 1599, image: '/images/quilingframe/qf19.jpeg' },
-  { id: 27, name: 'Quiling frames', category: 'Quiling frames', price: 3499, image: '/images/quilingframe/qf20.jpeg' },
+  { id: 24, name: 'Quiling frames', category: 'Quiling frames', price: 3499, image: '/images/quilingframe/qf18.jpeg' },
+  { id: 25, name: 'Quiling frames', category: 'Quiling frames', price: 1599, image: '/images/quilingframe/qf19.jpeg' },
+  { id: 26, name: 'Quiling frames', category: 'Quiling frames', price: 1499, image: '/images/quilingframe/qf20.jpeg' },
   { id: 27, name: 'Quiling frames', category: 'Quiling frames', price: 1999, image: '/images/quilingframe/qf21.jpeg' },
-  { id: 27, name: 'Quiling frames', category: 'Quiling frames', price: 999, image: '/images/quilingframe/qf22.jpeg' },
-  { id: 28, name: 'Quiling frames', category: 'Quiling frames', price: 899, image: '/images/quilingframe/qf23.jpeg' },
-
-
-
+  { id: 28, name: 'Quiling frames', category: 'Quiling frames', price: 999, image: '/images/quilingframe/qf22.jpeg' },
   { id: 30, name: 'Crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-1.jpeg' },
   { id: 31, name: 'Crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-2.jpeg' },
   { id: 32, name: 'Crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-3.jpeg' },
@@ -78,100 +65,3 @@ const allProducts = [
   { id: 150, name: 'Bouquet', category: 'Bouquets', price: 899, image: '/images/bouquets/b1.jpeg' },
   { id: 151, name: 'Bouquet', category: 'Bouquets', price: 899, image: '/images/bouquets/b2.jpeg' },
 ];
-const filters = ['All', 'Bouquets', 'crochet', 'Quiling frames', 'Hamper'];
-
-export default function Products() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [activeFilter, setActiveFilter] = useState(location?.state?.category || 'All');
-  const [activeSubcategory, setActiveSubcategory] = useState('All');
-
-  const addToCart = (product) => {
-    const cart = JSON.parse(localStorage.getItem('cart')) || [];
-    const existingProduct = cart.find((item) => item.id === product.id);
-
-    if (existingProduct) {
-      existingProduct.quantity += 1;
-    } else {
-      cart.push({ ...product, quantity: 1 });
-    }
-
-    localStorage.setItem('cart', JSON.stringify(cart));
-    toast.success(`${product.name} added to cart`);
-    navigate('/cart');
-  };
-
-  const filteredProducts = allProducts.filter((product) => {
-    if (activeFilter === 'All') return true;
-    if (product.category !== activeFilter) return false;
-    return activeFilter !== 'crochet' || activeSubcategory === 'All' || product.subcategory === activeSubcategory;
-  });
-
-  return (
-    <div className="products-page">
-      <Navbar />
-      <div className="products-header">
-        <h1>Our Handmade Collection</h1>
-        <p>Every piece is crafted with love and care</p>
-      </div>
-
-      <div className="filter-bar">
-        {filters.map((filter) => (
-          <button
-            key={filter}
-            className={activeFilter === filter ? 'filter-btn active' : 'filter-btn'}
-            onClick={() => {
-              setActiveFilter(filter);
-              setActiveSubcategory('All');
-            }}
-          >
-            {filter}
-          </button>
-        ))}
-      </div>
-
-      {activeFilter === 'crochet' && (
-        <div className="subcategory-bar">
-          {['All', 'keychains & charms', 'flower & flower pots', 'hair accessories'].map((subcategory) => (
-            <button
-              key={subcategory}
-              className={activeSubcategory === subcategory ? 'subcategory-btn active' : 'subcategory-btn'}
-              onClick={() => setActiveSubcategory(subcategory)}
-            >
-              {subcategory}
-            </button>
-          ))}
-        </div>
-      )}
-
-      <div className="products-content">
-        <>
-            <p className="products-count">{filteredProducts.length} products found</p>
-            <div className="products-grid-full">
-              {filteredProducts.map((product) => (
-                <div className="product-card" key={product.id}>
-                  <button
-                    className="product-card-img product-image-button"
-                    onClick={() => navigate(`/product/${product.id}`)}
-                    aria-label={`View ${product.name}`}
-                  >
-                    <img src={product.image} alt={product.name} />
-                  </button>
-                  <div className="product-card-body">
-                    <p className="product-card-tag">{product.category}</p>
-                    <h3>{product.name}</h3>
-                    <div className="product-card-footer">
-                      <span className="product-price">₹{product.price}</span>
-                      <button className="product-buy-btn" onClick={() => addToCart(product)}>
-                        Add to Cart
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-        </>
-      </div>
-    </div>
-  );
-}

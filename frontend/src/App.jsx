@@ -10,6 +10,7 @@ import Checkout from './components/Checkout/Checkout.jsx';
 import AdminOrders from "./components/AdminOrders/AdminOrders";
 import PaymentSuccess from './components/PaymentSuccess/PaymentSuccess.jsx';
 import PaymentFailure from './components/PaymentFailure/PaymentFailure.jsx';
+import ProductDetail from './components/ProductDetail/ProductDetail.jsx';
 export default function App() {
   return (
     <div>
@@ -22,6 +23,7 @@ export default function App() {
 
         {/* Products Page */}
         <Route path='/products' element={<Products />} />
+        <Route path='/product/:id' element={<ProductDetail />} />
 
         {/* Cart Page - NOTE: lowercase 'cart' (URL mein lowercase rakho) */}
         <Route path='/cart' element={<Cart />} />
