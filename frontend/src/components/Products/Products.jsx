@@ -100,7 +100,6 @@ const allProducts = [
     { id: 152, name: 'Bouquet', category: 'Bouquets', price: 1399, image: '/images/flowers/flower-39.jpeg' },
     { id: 153, name: 'Bouquet', category: 'Bouquets', price: 1399, image: '/images/bouquets/b3.jpeg' },
     { id: 154, name: 'Bouquet', category: 'Bouquets', price: 1399, image: '/images/bouquets/b4.jpeg' },
-    { id: 155, name: 'Bouquet', category: 'Bouquets', price: 1399, image: '/images/bouquets/b5.jpeg' },
     { id: 156, name: 'Bouquet', category: 'Bouquets', price: 1399, image: '/images/bouquets/b6.jpeg' },
     { id: 157, name: 'Bouquet', category: 'Bouquets', price: 1399, image: '/images/bouquets/b7.jpeg' },
     { id: 158, name: 'Bouquet', category: 'Bouquets', price: 1399, image: '/images/bouquets/b8.jpeg' },
