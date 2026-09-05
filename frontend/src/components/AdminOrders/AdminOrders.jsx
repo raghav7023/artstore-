@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Navbar from "../Navbar/Navbar";
 import "./AdminOrders.css";
 
@@ -8,29 +8,36 @@ export default function AdminOrders() {
 
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const hasFetchedOrders = useRef(false);
     const user = JSON.parse(localStorage.getItem("artstore_user"));
     const fetchOrders = async () => {
 
         try {
+            setError('');
+            const token = localStorage.getItem("artstore_token");
 
             const response = await fetch(
                 `${API_BASE_URL}/api/orders`,
                 {
                     headers: {
-                        Authorization: `Bearer ${localStorage.getItem("artstore_token")}`,
+                        Authorization: `Bearer ${token}`,
                     },
                 }
             );
 
             const data = await response.json();
 
-            if (data.success) {
-                setOrders(data.orders);
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || 'Unable to load orders.');
             }
+
+            setOrders(data.orders || []);
 
         } catch (error) {
 
             console.error("Error fetching orders:", error);
+            setError(error.message || 'Unable to load orders.');
 
         } finally {
 
@@ -41,9 +48,9 @@ export default function AdminOrders() {
     };
 
     useEffect(() => {
-        (async () => {
-            await fetchOrders();
-        })();
+        if (hasFetchedOrders.current) return;
+        hasFetchedOrders.current = true;
+        fetchOrders();
     }, []);
 
     return (
@@ -68,7 +75,11 @@ export default function AdminOrders() {
 
                 {loading ? (
 
-                    <h2>Loading Orders...</h2>
+                    <h2>Loading orders...</h2>
+
+                ) : error ? (
+
+                    <h2>{error}</h2>
 
                 ) : orders.length === 0 ? (
 

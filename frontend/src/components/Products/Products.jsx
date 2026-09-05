@@ -107,7 +107,7 @@ export const allProducts = [
 
 
 
-  { id: 150, name: 'Sunflower Lily Bouquet', category: 'Bouquets', price: 2549, image: '/images/bouquets/b1.jpeg' },
+  { id: 150, name: 'Sunflower Lily Bouquet', category: 'Bouquets', price: 2649, image: '/images/bouquets/b1.jpeg' },
   { id: 151, name: '100 Roses Bouquet', category: 'Bouquets', price: 16999, image: '/images/bouquets/b2.jpeg' },
   { id: 153, name: 'Lily Tulip Bouquet', category: 'Bouquets', price: 5099, image: '/images/bouquets/b3.jpeg' },
   { id: 154, name: 'Sunflower Dasy Bouquet', category: 'Bouquets', price: 1799, image: '/images/bouquets/b4.jpeg' },
@@ -139,11 +139,15 @@ export const allProducts = [
 ];
 const filters = ['All', 'Bouquets', 'crochet', 'Quiling frames'];
 
+// Format names only for display; filter values stay unchanged.
+const formatDisplayName = (value) => value.replace(/\b\w/g, (letter) => letter.toUpperCase());
+
 export default function Products() {
   const navigate = useNavigate();
   const location = useLocation();
   const [activeFilter, setActiveFilter] = useState(location?.state?.category || 'All');
-  const [activeSubcategory, setActiveSubcategory] = useState('All');
+  const [activeSubcategory, setActiveSubcategory] = useState(location?.state?.subcategory || 'All');
+  const searchText = (location?.state?.search || '').toLowerCase();
 
   const addToCart = (product) => {
     const cart = JSON.parse(localStorage.getItem('cart')) || [];
@@ -164,6 +168,11 @@ export default function Products() {
     if (activeFilter === 'All') return true;
     if (product.category !== activeFilter) return false;
     return activeFilter !== 'crochet' || activeSubcategory === 'All' || product.subcategory === activeSubcategory;
+  }).filter((product) => {
+    if (!searchText) return true;
+    return [product.name, product.category, product.subcategory, product.image]
+      .filter(Boolean)
+      .some((value) => value.toLowerCase().includes(searchText));
   });
 
   return (
@@ -184,7 +193,7 @@ export default function Products() {
               setActiveSubcategory('All');
             }}
           >
-            {filter}
+            {formatDisplayName(filter)}
           </button>
         ))}
       </div>
@@ -197,7 +206,7 @@ export default function Products() {
               className={activeSubcategory === subcategory ? 'subcategory-btn active' : 'subcategory-btn'}
               onClick={() => setActiveSubcategory(subcategory)}
             >
-              {subcategory}
+              {formatDisplayName(subcategory)}
             </button>
           ))}
         </div>
@@ -212,13 +221,15 @@ export default function Products() {
               <div className="product-card" key={`${product.id}-${product.image}`}>
                 <button
                   className="product-card-img product-image-button"
-                  onClick={() => navigate(`/product/${product.id}`)}
+                  onClick={() => navigate(`/product/${product.id}`, {
+                    state: { category: activeFilter, subcategory: activeSubcategory, search: searchText },
+                  })}
                   aria-label={`View ${product.name}`}
                 >
                   <img src={product.image} alt={product.name} />
                 </button>
                 <div className="product-card-body">
-                  <p className="product-card-tag">{product.category}</p>
+                  <p className="product-card-tag">{formatDisplayName(product.category)}</p>
                   <h3>{product.name}</h3>
                   <div className="product-card-footer">
                     <span className="product-price">₹{product.price}</span>

@@ -1,16 +1,23 @@
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import Navbar from '../Navbar/Navbar.jsx';
 import { allProducts } from '../Products/Products.jsx';
 import './ProductDetail.css';
 
+const formatDisplayName = (value) => value.replace(/\b\w/g, (letter) => letter.toUpperCase());
+
 export default function ProductDetail() {
   const { id } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   // Use the same product list as the Products page, so no second request is needed.
   const product = allProducts.find((item) => item.id === Number(id));
   const isLoading = false;
   const error = product ? '' : 'Product not found';
+  const returnFilter = location.state || {
+    category: product?.category || 'All',
+    subcategory: product?.subcategory || 'All',
+  };
 
   const addToCart = () => {
     const cart = JSON.parse(localStorage.getItem('cart')) || [];
@@ -31,7 +38,7 @@ export default function ProductDetail() {
     <div className="product-detail-page">
       <Navbar />
       <main className="product-detail-content">
-        <button className="detail-back-link" onClick={() => navigate('/products')}>
+        <button className="detail-back-link" onClick={() => navigate('/products', { state: returnFilter })}>
           ← Back to Products
         </button>
 
@@ -48,18 +55,15 @@ export default function ProductDetail() {
               <img src={product.image} alt={product.name} className="product-detail-image" loading="eager" decoding="async" />
             </div>
             <div className="product-detail-info">
-              <p className="product-detail-category">{product.category}</p>
+              <p className="product-detail-category">{formatDisplayName(product.category)}</p>
               <h1>{product.name}</h1>
               <p className="product-detail-price">₹{product.price}</p>
-              <p className="product-detail-description">
-                {product.description || `A carefully handmade ${product.name.toLowerCase()} created with love and attention to detail.`}
-              </p>
               {product.subcategory && (
-                <p className="product-detail-meta"><strong>Type:</strong> {product.subcategory}</p>
+                <p className="product-detail-meta"><strong>Type:</strong> {formatDisplayName(product.subcategory)}</p>
               )}
               <div className="product-detail-actions">
                 <button className="product-detail-cart-btn" onClick={addToCart}>Add to Cart</button>
-                <button className="product-detail-products-btn" onClick={() => navigate('/products')}>Back to Products</button>
+                <button className="product-detail-products-btn" onClick={() => navigate('/products', { state: returnFilter })}>Back to Products</button>
               </div>
             </div>
           </section>

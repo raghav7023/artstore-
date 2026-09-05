@@ -45,10 +45,12 @@ const featuredProducts = [
 // `name` is the display label, `value` is the exact category string used in products data
 const categories = [
   { emoji: '💐', name: 'Crochet', value: 'crochet' },
-  { emoji: '🌸', name: 'Quiling frames', value: 'Quiling frames' },
-  { emoji: '🔑', name: 'Bouqets', value: 'Bouquets' },
+  { emoji: '🌸', name: 'Quiling Frames', value: 'Quiling frames' },
+  { emoji: '🔑', name: 'Bouquets', value: 'Bouquets' },
   { emoji: '✨', name: 'Custom Orders' },
 ];
+
+const formatDisplayName = (value) => value.replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 export default function Home() {
   return (
@@ -108,7 +110,7 @@ export default function Home() {
 
               {/* Product Info */}
               <div className="product-card-body">
-                <p className="product-card-tag">{product.category}</p>
+                <p className="product-card-tag">{formatDisplayName(product.category)}</p>
                 <h3>{product.name}</h3>
 
                 <div className="product-card-footer">

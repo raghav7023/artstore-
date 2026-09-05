@@ -3,6 +3,7 @@
 // ==========================================
 
  
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./Navbar.css";
 
@@ -10,6 +11,7 @@ export default function Navbar() {
 
   // Navigation
   const navigate = useNavigate();
+  const [searchText, setSearchText] = useState('');
 
   // Logged in user
   const user = JSON.parse(localStorage.getItem("artstore_user"));
@@ -31,6 +33,11 @@ export default function Navbar() {
     navigate("/");
   };
 
+  const handleSearch = (event) => {
+    event.preventDefault();
+    navigate('/products', { state: { search: searchText.trim() } });
+  };
+
   return (
     <nav className="navbar">
       <div className="navbar-inner">
@@ -48,13 +55,15 @@ export default function Navbar() {
         </Link>
 
         {/* ====== SEARCH BAR ====== */}
-        <div className="navbar-search">
-          <span className="navbar-search-icon">🔍</span>
+        <form className="navbar-search" onSubmit={handleSearch}>
+          <button type="submit" className="navbar-search-icon" aria-label="Search">🔍</button>
           <input
             type="text"
             placeholder="Search crochet flowers, keychains..."
+            value={searchText}
+            onChange={(event) => setSearchText(event.target.value)}
           />
-        </div>
+        </form>
 
         {/* ====== RIGHT SIDE BUTTONS ====== */}
         <div className="navbar-actions">

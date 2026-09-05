@@ -93,7 +93,10 @@
   top: 50%;
   transform: translateY(-50%); /* Vertically bilkul center */
   font-size: 1rem;
-  pointer-events: none; /* Click events block nahi karega */
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
   color: var(--text-muted);
 }
 
