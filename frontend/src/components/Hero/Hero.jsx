@@ -46,12 +46,12 @@ export default function Hero() {
         {/* Stats */}
         <div className="hero-stats">
           <div className="hero-stat">
-            <strong>50+</strong>
+            <strong>100+</strong>
             <span>Products</span>
           </div>
           <div className="hero-stat-divider"></div>
           <div className="hero-stat">
-            <strong>200+</strong>
+            <strong>500+</strong>
             <span>Happy Customers</span>
           </div>
           <div className="hero-stat-divider"></div>

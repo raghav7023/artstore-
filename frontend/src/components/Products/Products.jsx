@@ -63,6 +63,7 @@ export const allProducts = [
   { id: 73, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-57.jpeg' },
   { id: 74, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-58.jpeg' },
   { id: 75, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-59.jpeg' },
+  { id: 76, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-60.jpeg' },
 
 
 
@@ -83,6 +84,8 @@ export const allProducts = [
   { id: 118, name: 'keychains & charms', category: 'crochet', subcategory: 'keychains & charms', price: 599, image: '/images/keychains/k24.jpeg' },
   { id: 119, name: 'keychains & charms', category: 'crochet', subcategory: 'keychains & charms', price: 599, image: '/images/keychains/k25.jpeg' },
   { id: 120, name: 'keychains & charms', category: 'crochet', subcategory: 'keychains & charms', price: 599, image: '/images/keychains/k26.jpeg' },
+  { id: 121, name: 'keychains & charms', category: 'crochet', subcategory: 'keychains & charms', price: 599, image: '/images/keychains/k27.jpeg' },
+  { id: 122, name: 'keychains & charms', category: 'crochet', subcategory: 'keychains & charms', price: 599, image: '/images/keychains/k28.jpeg' },
 
 
 
@@ -100,6 +103,7 @@ export const allProducts = [
   { id: 140, name: 'crochet hair accessories', category: 'crochet', subcategory: 'hair accessories', price: 199, image: '/images/hair/hair-11.jpeg' },
   { id: 141, name: 'crochet hair accessories', category: 'crochet', subcategory: 'hair accessories', price: 199, image: '/images/hair/hair-12.jpeg' },
   { id: 142, name: 'crochet hair accessories', category: 'crochet', subcategory: 'hair accessories', price: 199, image: '/images/hair/hair-13.jpeg' },
+  { id: 143, name: 'crochet hair accessories', category: 'crochet', subcategory: 'hair accessories', price: 199, image: '/images/hair/hair-14.jpeg' },
 
 
 
@@ -111,6 +115,7 @@ export const allProducts = [
   { id: 154, name: 'Bouquet', category: 'Bouquets', price: 1399, image: '/images/bouquets/b4.jpeg' },
   { id: 156, name: 'Bouquet', category: 'Bouquets', price: 1399, image: '/images/bouquets/b6.jpeg' },
   { id: 158, name: 'Bouquet', category: 'Bouquets', price: 1399, image: '/images/bouquets/b8.jpeg' },
+  { id: 159, name: 'Bouquet', category: 'Bouquets', price: 1399, image: '/images/bouquets/b9.jpeg' },
 
 
 
@@ -131,6 +136,7 @@ export const allProducts = [
 
 
  { id: 500, name: 'Winter needs', category: 'crochet', subcategory: 'Winter needs', price: 199, image: '/images/winter/w1.jpeg' },
+ { id: 501, name: 'Winter needs', category: 'crochet', subcategory: 'Winter needs', price: 199, image: '/images/winter/w2.jpeg' },
 
 ];
 const filters = ['All', 'Bouquets', 'crochet', 'Quiling frames'];
@@ -204,7 +210,8 @@ export default function Products() {
           <p className="products-count">{filteredProducts.length} products found</p>
           <div className="products-grid-full">
             {filteredProducts.map((product) => (
-              <div className="product-card" key={product.id}>
+              // Include the image path so each product card keeps its own identity.
+              <div className="product-card" key={`${product.id}-${product.image}`}>
                 <button
                   className="product-card-img product-image-button"
                   onClick={() => navigate(`/product/${product.id}`)}
