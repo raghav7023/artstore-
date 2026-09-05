@@ -47,7 +47,6 @@ const categories = [
   { emoji: '💐', name: 'Crochet', value: 'crochet' },
   { emoji: '🌸', name: 'Quiling frames', value: 'Quiling frames' },
   { emoji: '🔑', name: 'Bouqets', value: 'Bouquets' },
-  { emoji: '🎁', name: 'Hamper', value: 'Hamper' },
   { emoji: '✨', name: 'Custom Orders' },
 ];
 
