@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Navbar from '../Navbar/Navbar.jsx';
 import './Cart.css';
 import { useNavigate } from "react-router-dom";
+
 export default function Cart() {
   const navigate = useNavigate();
 
@@ -102,7 +103,6 @@ export default function Cart() {
                   <p className="item-price">
                     ₹{item.price}
                   </p>
-
                   <div className="quantity">
 
                     <button

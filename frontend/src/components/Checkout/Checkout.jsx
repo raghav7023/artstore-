@@ -54,17 +54,24 @@ export default function Checkout() {
         setIsProcessing(true);
 
         try {
+            const token = localStorage.getItem('artstore_token');
+            if (!token) {
+                throw new Error('Please sign in before placing an order.');
+            }
+
             const resp = await fetch(`${API_BASE_URL}/api/payments/create-order`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${localStorage.getItem('artstore_token')}`,
+                    Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({ ...formData, products: cartItems, payment: formData.payment }),
             });
 
             const data = await resp.json();
-            if (!data.success) throw new Error(data.message || 'Unable to create payment order');
+            if (!resp.ok || !data.success) {
+                throw new Error(data.message || 'Unable to place order. Please try again.');
+            }
 
             if (!data.key && data.order) {
                 toast.success('Order placed (Cash on Delivery)');
@@ -91,7 +98,7 @@ export default function Checkout() {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
-                                Authorization: `Bearer ${localStorage.getItem('artstore_token')}`,
+                                Authorization: `Bearer ${token}`,
                             },
                             body: JSON.stringify({
                                 razorpay_order_id: response.razorpay_order_id,
@@ -123,7 +130,9 @@ export default function Checkout() {
             rzp.open();
         } catch (error) {
             console.error(error);
-            toast.error(error.message || 'Payment failed');
+            toast.error(error.message === 'Failed to fetch'
+                ? 'Unable to place order. Please try again.'
+                : error.message || 'Unable to place order. Please try again.');
         } finally {
             setIsProcessing(false);
         }

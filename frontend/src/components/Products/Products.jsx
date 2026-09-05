@@ -6,12 +6,10 @@ import './Products.css';
 import '../Home/Home.css';
 
 // Product listing data used by the existing products page.
-const allProducts = [
-  { id: 1, name: 'Gift Hamper', category: 'Hamper', price: 299, image: '/images/hamper/h01.jpeg' },
-  { id: 2, name: 'Birthday Hamper', category: 'Hamper', price: 5899, image: '/images/hamper/h02.jpeg' },
-  { id: 3, name: 'Gift Hamper', category: 'Hamper', price: 3299, image: '/images/hamper/h03.jpeg' },
-  { id: 4, name: 'Gift Hamper', category: 'Hamper', price: 999, image: '/images/hamper/h05.jpeg' },
-  { id: 5, name: 'Gift Hamper', category: 'Hamper', price: 799, image: '/images/hamper/h06.jpeg' },
+// eslint-disable-next-line react-refresh/only-export-components
+export const allProducts = [
+
+
   { id: 9, name: 'Quiling frames', category: 'Quiling frames', price: 1499, image: '/images/quilingframe/qf02.jpeg' },
   { id: 10, name: 'Quiling frames', category: 'Quiling frames', price: 7999, image: '/images/quilingframe/qf03.jpeg' },
   { id: 11, name: 'Quiling frames', category: 'Quiling frames', price: 1899, image: '/images/quilingframe/qf04.jpeg' },
@@ -35,53 +33,56 @@ const allProducts = [
   { id: 200, name: 'Quiling frames', category: 'Quiling frames', price: 899, image: '/images/quilingframe/qf23.jpeg' },
   { id: 201, name: 'Quiling frames', category: 'Quiling frames', price: 599, image: '/images/quilingframe/qf24.jpeg' },
   { id: 202, name: 'Quiling frames', category: 'Quiling frames', price: 499, image: '/images/quilingframe/qf25.jpeg' },
+  { id: 203, name: 'Quiling frames', category: 'Quiling frames', price: 499, image: '/images/quilingframe/qf26.jpeg' },
 
 
 
-//   { id: 30, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-1.jpeg' },
-  { id: 31, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-2.jpeg' },
-//   { id: 32, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-3.jpeg' },
-  { id: 33, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-4.jpeg' },
-//   { id: 34, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-5.jpeg' },
-//   { id: 35, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-6.jpeg' },
-  { id: 36, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-7.jpeg' },
-//   { id: 37, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-8.jpeg' },
-//   { id: 38, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-9.jpeg' },
-//   { id: 39, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-10.jpeg' },
-  { id: 40, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-11.jpeg' },
-//   { id: 41, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-12.jpeg' },
-  { id: 42, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-13.jpeg' },
-//   { id: 43, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-14.jpeg' },
-//   { id: 44, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-15.jpeg' },
-  { id: 45, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-16.jpeg' },
-//   { id: 46, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-17.jpeg' },
-  { id: 47, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-18.jpeg' },
-  { id: 48, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-19.jpeg' },
+
   { id: 49, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-20.jpeg' },
-//   { id: 50, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-21.jpeg' },
-//   { id: 51, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-22.jpeg' },
-//   { id: 53, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-23.jpeg' },
-  { id: 54, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-24.jpeg' },
-  { id: 55, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-25.jpeg' },
-//   { id: 56, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-26.jpeg' },
-//   { id: 57, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-27.jpeg' },
-//   { id: 58, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image:  },
-//   { id: 100, name: 'keychains & charms', category: 'crochet', subcategory: 'keychains & charms', price: 599, image: '/images/keychains/keychain-1.jpeg' },
+  { id: 50, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-32.jpeg' },
+  { id: 51, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-37.jpeg' },
+  { id: 52, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-38.jpeg' },
+  { id: 53, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-39.jpeg' },
+  { id: 56, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-40.jpeg' },
+  { id: 57, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-41.jpeg' },
+  { id: 58, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-42.jpeg' },
+  { id: 59, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-43.jpeg' },
+  { id: 60, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-44.jpeg' },
+  { id: 61, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-45.jpeg' },
+  { id: 62, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-46.jpeg' },
+  { id: 63, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-47.jpeg' },
+  { id: 64, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-48.jpeg' },
+  { id: 65, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-49.jpeg' },
+  { id: 66, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-50.jpeg' },
+  { id: 67, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-51.jpeg' },
+  { id: 68, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-52.jpeg' },
+  { id: 69, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-53.jpeg' },
+  { id: 70, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-54.jpeg' },
+  { id: 71, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-55.jpeg' },
+  { id: 72, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-56.jpeg' },
+  { id: 73, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-57.jpeg' },
+  { id: 74, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-58.jpeg' },
+  { id: 75, name: 'crochet flower & flower pots', category: 'crochet', subcategory: 'flower & flower pots', price: 799, image: '/images/flowers/flower-59.jpeg' },
+
+
+
+
+
   { id: 101, name: 'keychains & charms', category: 'crochet', subcategory: 'keychains & charms', price: 599, image: '/images/keychains/keychain-2.jpeg' },
   { id: 102, name: 'keychains & charms', category: 'crochet', subcategory: 'keychains & charms', price: 599, image: '/images/keychains/keychain-3.jpeg' },
-  { id: 103, name: 'keychains & charms', category: 'crochet', subcategory: 'keychains & charms', price: 599, image: '/images/keychains/keychain-4.jpeg' },
-  { id: 104, name: 'keychains & charms', category: 'crochet', subcategory: 'keychains & charms', price: 599, image: '/images/keychains/keychain-5.jpeg' },
   { id: 105, name: 'keychains & charms', category: 'crochet', subcategory: 'keychains & charms', price: 599, image: '/images/keychains/keychain-6.jpeg' },
   { id: 106, name: 'keychains & charms', category: 'crochet', subcategory: 'keychains & charms', price: 599, image: '/images/keychains/keychain-8.jpeg' },
   { id: 107, name: 'keychains & charms', category: 'crochet', subcategory: 'keychains & charms', price: 599, image: '/images/keychains/k9.jpeg' },
   { id: 108, name: 'keychains & charms', category: 'crochet', subcategory: 'keychains & charms', price: 599, image: '/images/keychains/k10.jpeg' },
   { id: 109, name: 'keychains & charms', category: 'crochet', subcategory: 'keychains & charms', price: 599, image: '/images/keychains/k11.jpeg' },
-  { id: 110, name: 'keychains & charms', category: 'crochet', subcategory: 'keychains & charms', price: 599, image: '/images/keychains/k12.jpeg' },
-  { id: 111, name: 'keychains & charms', category: 'crochet', subcategory: 'keychains & charms', price: 599, image: '/images/keychains/k13.jpeg' },
-  { id: 112, name: 'keychains & charms', category: 'crochet', subcategory: 'keychains & charms', price: 599, image: '/images/keychains/k14.jpeg' },
   { id: 113, name: 'keychains & charms', category: 'crochet', subcategory: 'keychains & charms', price: 599, image: '/images/keychains/k15.jpeg' },
-  { id: 114, name: 'keychains & charms', category: 'crochet', subcategory: 'keychains & charms', price: 599, image: '/images/keychains/k16.jpeg' },
-  { id: 115, name: 'keychains & charms', category: 'crochet', subcategory: 'keychains & charms', price: 599, image: '/images/keychains/k17.jpeg' },
+  { id: 114, name: 'keychains & charms', category: 'crochet', subcategory: 'keychains & charms', price: 599, image: '/images/keychains/k20.jpeg' },
+  { id: 115, name: 'keychains & charms', category: 'crochet', subcategory: 'keychains & charms', price: 599, image: '/images/keychains/k21.jpeg' },
+  { id: 116, name: 'keychains & charms', category: 'crochet', subcategory: 'keychains & charms', price: 599, image: '/images/keychains/k22.jpeg' },
+  { id: 117, name: 'keychains & charms', category: 'crochet', subcategory: 'keychains & charms', price: 599, image: '/images/keychains/k23.jpeg' },
+  { id: 118, name: 'keychains & charms', category: 'crochet', subcategory: 'keychains & charms', price: 599, image: '/images/keychains/k24.jpeg' },
+  { id: 119, name: 'keychains & charms', category: 'crochet', subcategory: 'keychains & charms', price: 599, image: '/images/keychains/k25.jpeg' },
+  { id: 120, name: 'keychains & charms', category: 'crochet', subcategory: 'keychains & charms', price: 599, image: '/images/keychains/k26.jpeg' },
 
 
 
@@ -89,31 +90,50 @@ const allProducts = [
 
   { id: 130, name: 'crochet hair accessories', category: 'crochet', subcategory: 'hair accessories', price: 199, image: '/images/hair/hair-1.jpeg' },
   { id: 131, name: 'crochet hair accessories', category: 'crochet', subcategory: 'hair accessories', price: 199, image: '/images/hair/hair-2.jpeg' },
-  { id: 132, name: 'crochet hair accessories', category: 'crochet', subcategory: 'hair accessories', price: 199, image: '/images/hair/hair-3.jpeg' },
   { id: 133, name: 'crochet hair accessories', category: 'crochet', subcategory: 'hair accessories', price: 199, image: '/images/hair/hair-4.jpeg' },
+  { id: 134, name: 'crochet hair accessories', category: 'crochet', subcategory: 'hair accessories', price: 199, image: '/images/hair/hair-5.jpeg' },
+  { id: 135, name: 'crochet hair accessories', category: 'crochet', subcategory: 'hair accessories', price: 199, image: '/images/hair/hair-6.jpeg' },
+  { id: 136, name: 'crochet hair accessories', category: 'crochet', subcategory: 'hair accessories', price: 199, image: '/images/hair/hair-7.jpeg' },
+  { id: 137, name: 'crochet hair accessories', category: 'crochet', subcategory: 'hair accessories', price: 199, image: '/images/hair/hair-8.jpeg' },
+  { id: 138, name: 'crochet hair accessories', category: 'crochet', subcategory: 'hair accessories', price: 199, image: '/images/hair/hair-9.jpeg' },
+  { id: 139, name: 'crochet hair accessories', category: 'crochet', subcategory: 'hair accessories', price: 199, image: '/images/hair/hair-10.jpeg' },
+  { id: 140, name: 'crochet hair accessories', category: 'crochet', subcategory: 'hair accessories', price: 199, image: '/images/hair/hair-11.jpeg' },
+  { id: 141, name: 'crochet hair accessories', category: 'crochet', subcategory: 'hair accessories', price: 199, image: '/images/hair/hair-12.jpeg' },
+  { id: 142, name: 'crochet hair accessories', category: 'crochet', subcategory: 'hair accessories', price: 199, image: '/images/hair/hair-13.jpeg' },
 
 
 
 
   { id: 150, name: 'Bouquet', category: 'Bouquets', price: 2349, image: '/images/bouquets/b1.jpeg' },
   { id: 151, name: 'Bouquet', category: 'Bouquets', price: 15999, image: '/images/bouquets/b2.jpeg' },
-    { id: 152, name: 'Bouquet', category: 'Bouquets', price: 1399, image: '/images/flowers/flower-39.jpeg' },
-    { id: 153, name: 'Bouquet', category: 'Bouquets', price: 1399, image: '/images/bouquets/b3.jpeg' },
-    { id: 154, name: 'Bouquet', category: 'Bouquets', price: 1399, image: '/images/bouquets/b4.jpeg' },
-    { id: 156, name: 'Bouquet', category: 'Bouquets', price: 1399, image: '/images/bouquets/b6.jpeg' },
-    { id: 157, name: 'Bouquet', category: 'Bouquets', price: 1399, image: '/images/bouquets/b7.jpeg' },
-    { id: 158, name: 'Bouquet', category: 'Bouquets', price: 1399, image: '/images/bouquets/b8.jpeg' },
+  { id: 152, name: 'Bouquet', category: 'Bouquets', price: 1399, image: '/images/flowers/flower-39.jpeg' },
+  { id: 153, name: 'Bouquet', category: 'Bouquets', price: 1399, image: '/images/bouquets/b3.jpeg' },
+  { id: 154, name: 'Bouquet', category: 'Bouquets', price: 1399, image: '/images/bouquets/b4.jpeg' },
+  { id: 156, name: 'Bouquet', category: 'Bouquets', price: 1399, image: '/images/bouquets/b6.jpeg' },
+  { id: 158, name: 'Bouquet', category: 'Bouquets', price: 1399, image: '/images/bouquets/b8.jpeg' },
 
 
 
-    { id: 400, name: 'crochet hair accessories', category: 'crochet', subcategory: 'crochet Bag', price: 199, image: '/images/crochetbag/cb1.jpeg' },
-    { id: 401, name: 'crochet hair accessories', category: 'crochet', subcategory: 'crochet Bag', price: 199, image: '/images/crochetbag/cb2.jpeg' },
-    { id: 402, name: 'crochet hair accessories', category: 'crochet', subcategory: 'crochet Bag', price: 199, image: '/images/crochetbag/cb3.jpeg' },
-    { id: 403, name: 'crochet hair accessories', category: 'crochet', subcategory: 'crochet Bag', price: 199, image: '/images/crochetbag/cb4.jpeg' },
-    { id: 404, name: 'crochet hair accessories', category: 'crochet', subcategory: 'crochet Bag', price: 199, image: '/images/crochetbag/cb5.jpeg' },
+  { id: 400, name: 'crochet hair accessories', category: 'crochet', subcategory: 'crochet Bag', price: 199, image: '/images/crochetbag/cb1.jpeg' },
+  { id: 401, name: 'crochet hair accessories', category: 'crochet', subcategory: 'crochet Bag', price: 199, image: '/images/crochetbag/cb2.jpeg' },
+  { id: 402, name: 'crochet hair accessories', category: 'crochet', subcategory: 'crochet Bag', price: 199, image: '/images/crochetbag/cb6.jpeg' },
+  { id: 403, name: 'crochet hair accessories', category: 'crochet', subcategory: 'crochet Bag', price: 199, image: '/images/crochetbag/cb3.jpeg' },
+  { id: 404, name: 'crochet hair accessories', category: 'crochet', subcategory: 'crochet Bag', price: 199, image: '/images/crochetbag/cb7.jpeg' },
+  { id: 405, name: 'crochet hair accessories', category: 'crochet', subcategory: 'crochet Bag', price: 199, image: '/images/crochetbag/cb8.jpeg' },
+  { id: 406, name: 'crochet hair accessories', category: 'crochet', subcategory: 'crochet Bag', price: 199, image: '/images/crochetbag/cb9.jpeg' },
+  { id: 407, name: 'crochet hair accessories', category: 'crochet', subcategory: 'crochet Bag', price: 199, image: '/images/crochetbag/cb10.jpeg' },
+  { id: 408, name: 'crochet hair accessories', category: 'crochet', subcategory: 'crochet Bag', price: 199, image: '/images/crochetbag/cb11.jpeg' },
+  { id: 409, name: 'crochet hair accessories', category: 'crochet', subcategory: 'crochet Bag', price: 199, image: '/images/crochetbag/cb12.jpeg' },
+  { id: 410, name: 'crochet hair accessories', category: 'crochet', subcategory: 'crochet Bag', price: 199, image: '/images/crochetbag/cb13.jpeg' },
+
+
+
+
+
+ { id: 500, name: 'Winter needs', category: 'crochet', subcategory: 'Winter needs', price: 199, image: '/images/winter/w1.jpeg' },
 
 ];
-const filters = ['All', 'Bouquets', 'crochet', 'Quiling frames', 'Hamper'];
+const filters = ['All', 'Bouquets', 'crochet', 'Quiling frames'];
 
 export default function Products() {
   const navigate = useNavigate();
@@ -167,7 +187,7 @@ export default function Products() {
 
       {activeFilter === 'crochet' && (
         <div className="subcategory-bar">
-          {['All', 'keychains & charms', 'flower & flower pots', 'hair accessories','crochet Bag'].map((subcategory) => (
+          {['All', 'keychains & charms', 'flower & flower pots', 'hair accessories', 'crochet Bag','Winter needs'].map((subcategory) => (
             <button
               key={subcategory}
               className={activeSubcategory === subcategory ? 'subcategory-btn active' : 'subcategory-btn'}
@@ -181,30 +201,30 @@ export default function Products() {
 
       <div className="products-content">
         <>
-            <p className="products-count">{filteredProducts.length} products found</p>
-            <div className="products-grid-full">
-              {filteredProducts.map((product) => (
-                <div className="product-card" key={product.id}>
-                  <button
-                    className="product-card-img product-image-button"
-                    onClick={() => navigate(`/product/${product.id}`)}
-                    aria-label={`View ${product.name}`}
-                  >
-                    <img src={product.image} alt={product.name} />
-                  </button>
-                  <div className="product-card-body">
-                    <p className="product-card-tag">{product.category}</p>
-                    <h3>{product.name}</h3>
-                    <div className="product-card-footer">
-                      <span className="product-price">₹{product.price}</span>
-                      <button className="product-buy-btn" onClick={() => addToCart(product)}>
-                        Add to Cart
-                      </button>
-                    </div>
+          <p className="products-count">{filteredProducts.length} products found</p>
+          <div className="products-grid-full">
+            {filteredProducts.map((product) => (
+              <div className="product-card" key={product.id}>
+                <button
+                  className="product-card-img product-image-button"
+                  onClick={() => navigate(`/product/${product.id}`)}
+                  aria-label={`View ${product.name}`}
+                >
+                  <img src={product.image} alt={product.name} />
+                </button>
+                <div className="product-card-body">
+                  <p className="product-card-tag">{product.category}</p>
+                  <h3>{product.name}</h3>
+                  <div className="product-card-footer">
+                    <span className="product-price">₹{product.price}</span>
+                    <button className="product-buy-btn" onClick={() => addToCart(product)}>
+                      Add to Cart
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
+          </div>
         </>
       </div>
     </div>
