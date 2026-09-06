@@ -10,7 +10,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import './Authentication.css';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:2026';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:2026').replace(/\/+$/, '');
 
 export default function Authentication() {
 

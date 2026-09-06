@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Navbar from "../Navbar/Navbar";
 import "./AdminOrders.css";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:2026';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:2026').replace(/\/+$/, '');
 
 export default function AdminOrders() {
 

@@ -34,14 +34,20 @@ const app = express();
 // Iska matlab: Kaun se domains hamara API use kar sakte hain
 // React frontend different port pe run karta hai (5173)
 // Isliye hume explicitly allow karna padega
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "http://localhost:3000",
+  "https://artstore-by-raghav.vercel.app",
+  "https://artstorestudio.com",
+  "https://www.artstorestudio.com",
+  ...(process.env.CLIENT_URL ? [process.env.CLIENT_URL.trim().replace(/\/+$/, '')] : []),
+  ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim().replace(/\/+$/, '')) : []),
+];
+
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "http://127.0.0.1:5173",
-      "http://localhost:3000",
-      "https://artstore-by-raghav.vercel.app",
-    ],
+    origin: Array.from(new Set(allowedOrigins)),
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })

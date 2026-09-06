@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { getDeliveryCharge } from '../../config/delivery.js';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:2026';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:2026').replace(/\/+$/, '');
 
 export default function Checkout() {
     const cartItems = JSON.parse(localStorage.getItem('cart')) || [];
