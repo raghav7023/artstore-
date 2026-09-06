@@ -29,6 +29,8 @@ export default function Hero() {
         {/* Description */}
         <p className="hero-desc">
           Discover our collection of handmade crochet , quilling , hampers & custom gifts. 🌸
+
+         <p></p> Orders are deliverd within 15-20 days
         </p>
 
         {/* Buttons */}
@@ -46,7 +48,7 @@ export default function Hero() {
         {/* Stats */}
         <div className="hero-stats">
           <div className="hero-stat">
-            <strong>100+</strong>
+            <strong>80+</strong>
             <span>Products</span>
           </div>
           <div className="hero-stat-divider"></div>

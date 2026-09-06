@@ -1,5 +1,7 @@
 import Order from "../models/Order.model.js";
 import { WHATSAPP_ACCESS_TOKEN, WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_TO_NUMBER } from '../../Config.mjs';
+import { getDeliveryCharge } from '../config/delivery.config.js';
+import { sendOrderEmails } from '../utils/emailService.js';
 
 const sendWhatsAppNotification = async (orderData, type = 'normal') => {
     if (!WHATSAPP_ACCESS_TOKEN || !WHATSAPP_PHONE_NUMBER_ID || !WHATSAPP_TO_NUMBER) {
@@ -61,6 +63,20 @@ export const createOrder = async (req, res) => {
             total,
         } = req.body;
 
+        // Reject Cash on Delivery — only Razorpay online payment is accepted
+        if (payment === 'Cash on Delivery' || payment === 'cod' || payment?.toLowerCase() === 'cash on delivery') {
+            return res.status(400).json({
+                success: false,
+                message: 'Cash on Delivery is no longer accepted. Please use online payment (Razorpay).',
+            });
+        }
+
+        const productSubtotal = products.reduce(
+            (sum, product) => sum + Number(product.price) * Number(product.quantity),
+            0,
+        );
+        const delivery = getDeliveryCharge(products);
+
         const newOrder = await Order.create({
 
             // Logged in user ka id save hoga
@@ -74,11 +90,12 @@ export const createOrder = async (req, res) => {
             pincode,
             payment,
             products,
-            total,
+            total: productSubtotal + delivery,
 
         });
 
         void sendWhatsAppNotification(newOrder.toObject(), 'normal');
+        void sendOrderEmails(newOrder.toObject());
 
         res.status(201).json({
             success: true,

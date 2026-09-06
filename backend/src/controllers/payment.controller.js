@@ -3,6 +3,9 @@ import crypto from 'crypto';
 import PaymentAttempt from '../models/PaymentAttempt.model.js';
 import Order from '../models/Order.model.js';
 import { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET } from '../../Config.mjs';
+import { getDeliveryCharge } from '../config/delivery.config.js';
+// sendOrderEmails: sends store-owner + customer emails after a successful order
+import { sendOrderEmails } from '../utils/emailService.js';
 
 // Lazily initialize Razorpay only if credentials are provided
 let razorpay = null;
@@ -28,8 +31,7 @@ const calculateAmountFromProducts = (products) => {
     total += qty * price;
   }
 
-  // Keep the server total consistent with the checkout page delivery charge.
-  const delivery = total > 0 ? 50 : 0;
+  const delivery = getDeliveryCharge(products);
   return Math.round((total + delivery) * 100);
 };
 
@@ -57,22 +59,12 @@ export const createPaymentOrder = async (req, res) => {
     // Recalculate amount on server — do NOT trust frontend total
     const amountInPaise = calculateAmountFromProducts(products);
 
-    // If Cash on Delivery, create order directly (no Razorpay)
-    if (payment === 'Cash on Delivery' || payment === 'cod') {
-      const newOrder = await Order.create({
-        user: userId,
-        name,
-        email,
-        phone,
-        address,
-        city,
-        pincode,
-        payment: 'Cash on Delivery',
-        products,
-        total: amountInPaise / 100,
+    // Reject Cash on Delivery — only Razorpay online payment is accepted
+    if (payment === 'Cash on Delivery' || payment === 'cod' || payment?.toLowerCase() === 'cash on delivery') {
+      return res.status(400).json({
+        success: false,
+        message: 'Cash on Delivery is no longer accepted. Please use online payment (Razorpay).',
       });
-
-      return res.status(201).json({ success: true, message: 'Order placed (COD)', order: newOrder });
     }
 
     if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
@@ -170,6 +162,9 @@ export const verifyPayment = async (req, res) => {
         signature: razorpay_signature,
       },
     });
+
+    // Send emails after order is saved — failure does NOT cancel the order
+    void sendOrderEmails(newOrder.toObject());
 
     res.status(200).json({ success: true, message: 'Payment verified and order created', order: newOrder });
   } catch (error) {

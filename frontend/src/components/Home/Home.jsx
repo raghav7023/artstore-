@@ -3,56 +3,58 @@
 // ==========================================
 
  
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../Navbar/Navbar.jsx';
 import Hero from '../Hero/Hero.jsx';
 import './Home.css';
 
-// Sample products data — baad mein backend se aayega
-// Abhi ke liye hardcoded rakhte hain seekhne ke liye
+// Featured products — IDs match allProducts in Products.jsx so
+// clicking a card opens the correct ProductDetail page.
 const featuredProducts = [
   {
-    id: 1,
-    name: 'Sunflower Bouquet',
+    id: 150,
+    name: 'Sunflower Lily Bouquet',
     category: 'Bouquets',
-    price: 299,
-    image: '/sunflower.jpeg',
+    price: 2649,
+    image: '/images/bouquets/b1.jpeg',
   },
   {
-    id: 2,
-    name: 'flowers',
+    id: 51,
+    name: 'Rose Flower Pot',
     category: 'crochet',
-    price: 199,
-    image: '/images/flowers/flower-39.jpeg',
+    price: 449,
+    image: '/images/flowers/flower-37.jpeg',
   },
   {
-    id: 3,
-    name: 'gift Hamper',
-    category: 'Hamper',
-    price: 299,
-    image: '/images/hamper/h06.jpeg',
-  },
-  {
-    id: 4,
-    name: 'hair accessories',
+    id: 404,
+    name: 'Sling Bag',
     category: 'crochet',
-    price: 299,
-    image: '/images/hair/hair-4.jpeg',
+    price: 1299,
+    image: '/images/crochetbag/cb7.jpeg',
+  },
+  {
+    id: 136,
+    name: 'Cherry Hair Pin',
+    category: 'crochet',
+    price: 119,
+    image: '/images/hair/hair-7.jpeg',
   },
 ];
 
-// Categories list
+// Categories list — 3 product categories only
 // `name` is the display label, `value` is the exact category string used in products data
 const categories = [
   { emoji: '💐', name: 'Crochet', value: 'crochet' },
   { emoji: '🌸', name: 'Quiling Frames', value: 'Quiling frames' },
   { emoji: '🔑', name: 'Bouquets', value: 'Bouquets' },
-  { emoji: '✨', name: 'Custom Orders' },
 ];
 
 const formatDisplayName = (value) => value.replace(/\b\w/g, (letter) => letter.toUpperCase());
 
 export default function Home() {
+  // useNavigate — React Router hook for navigating programmatically
+  const navigate = useNavigate();
+
   return (
     <div>
 
@@ -73,11 +75,11 @@ export default function Home() {
         </div>
 
         <div className="categories-grid">
-          {/* .map() = Array ke har item ko card mein convert karo */}
+          {/* All 3 cards link to the products page filtered by category */}
           {categories.map((cat, index) => (
             <Link
-              to={cat.name === "Custom Orders" ? "/custom-orders" : "/products"}
-              state={cat.name === "Custom Orders" ? undefined : { category: cat.value || cat.name }}
+              to="/products"
+              state={{ category: cat.value || cat.name }}
               className="category-card"
               key={index}
             >
@@ -86,6 +88,23 @@ export default function Home() {
               <p>{cat.count}</p>
             </Link>
           ))}
+        </div>
+      </div>
+
+      {/* ====== CUSTOM ORDER PROMO SECTION ====== */}
+      {/* Separate promotional banner — NOT a category card */}
+      <div className="custom-order-section">
+        <div className="custom-order-content">
+          <span className="custom-order-tag">✨ Made Just For You</span>
+          <h2 className="custom-order-title">Create Something Made Just For You</h2>
+          <p className="custom-order-desc">
+            Have something special in mind? Customize your own handmade piece
+            and make it truly yours.
+          </p>
+          {/* Links to the existing Customorders page */}
+          <Link to="/custom-orders" className="custom-order-btn">
+            Make Your Custom Order →
+          </Link>
         </div>
       </div>
 
@@ -101,7 +120,13 @@ export default function Home() {
 
         <div className="products-grid">
           {featuredProducts.map((product) => (
-            <div className="product-card" key={product.id}>
+            // Entire card is a button — clicking anywhere opens the product detail page
+            <button
+              key={product.id}
+              className="product-card featured-card-btn"
+              onClick={() => navigate(`/product/${product.id}`)}
+              aria-label={`View ${product.name}`}
+            >
 
               {/* Product Image */}
               <div className="product-card-img">
@@ -119,7 +144,7 @@ export default function Home() {
                 </div>
               </div>
 
-            </div>
+            </button>
           ))}
         </div>
 

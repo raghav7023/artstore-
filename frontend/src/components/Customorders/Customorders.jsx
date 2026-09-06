@@ -83,7 +83,7 @@ export default function Customorders() {
                 phone: "",
                 product: "",
                 color: "",
-                budget: "",
+                // budget: "",
                 delivery: "",
                 message: "",
                 image: null,
@@ -104,18 +104,33 @@ export default function Customorders() {
 
             <div className="custom-container">
 
+                {/* ── Intro / landing section ── */}
                 <div className="custom-header">
 
-                    <h1>✨ Custom Order Request</h1>
+                    <h1>✨ Create Something Made Just For You</h1>
 
                     <p>
-                        Tell us what you want and we'll create a beautiful handmade
-                        product specially for you.
+                        Have something special in mind? Customize your own handmade piece
+                        and make it truly yours.
                     </p>
+
+                    {/* Info box */}
+                    <div className="custom-intro-box">
+                        <h2>Want to customize your order?</h2>
+                        <p>
+                            Tell us what you have in mind — choose your design, colors, size,
+                            theme or any other details, and we'll help turn your idea into a
+                            handmade creation.
+                        </p>
+                        {/* Scrolls down to the form below */}
+                        <a href="#custom-form" className="custom-cta-btn">
+                            Make Your Custom Order
+                        </a>
+                    </div>
 
                 </div>
 
-                <form className="custom-form" onSubmit={handleSubmit}>
+                <form id="custom-form" className="custom-form" onSubmit={handleSubmit}>
 
                     <div className="form-group">
 
@@ -204,7 +219,7 @@ export default function Customorders() {
 
                     </div>
 
-                    <div className="form-group">
+                    {/* <div className="form-group">
 
                         <label>Budget (₹)</label>
 
@@ -216,7 +231,7 @@ export default function Customorders() {
                             onChange={handleChange}
                         />
 
-                    </div>
+                    </div> */}
 
                     <div className="form-group">
 

@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from '../Navbar/Navbar';
 import './Checkout.css';
 import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import { getDeliveryCharge } from '../../config/delivery.js';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:2026';
 
@@ -11,7 +12,7 @@ export default function Checkout() {
     const cartItems = JSON.parse(localStorage.getItem('cart')) || [];
 
     const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const delivery = subtotal > 0 ? 50 : 0;
+    const delivery = getDeliveryCharge(cartItems);
     const total = subtotal + delivery;
 
     const [formData, setFormData] = useState({
@@ -21,12 +22,20 @@ export default function Checkout() {
         address: '',
         city: '',
         pincode: '',
-        payment: 'Cash on Delivery',
+        payment: 'Razorpay',
     });
 
     const [isProcessing, setIsProcessing] = useState(false);
 
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const token = localStorage.getItem('artstore_token');
+        if (!token) {
+            toast.error('Please sign in before checkout.');
+            navigate('/signin');
+        }
+    }, [navigate]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -56,7 +65,10 @@ export default function Checkout() {
         try {
             const token = localStorage.getItem('artstore_token');
             if (!token) {
-                throw new Error('Please sign in before placing an order.');
+                toast.error('Please sign in before placing an order.');
+                setIsProcessing(false);
+                navigate('/signin');
+                return;
             }
 
             const resp = await fetch(`${API_BASE_URL}/api/payments/create-order`, {
@@ -70,14 +82,15 @@ export default function Checkout() {
 
             const data = await resp.json();
             if (!resp.ok || !data.success) {
+                if (resp.status === 401) {
+                    localStorage.removeItem('artstore_token');
+                    localStorage.removeItem('artstore_user');
+                    toast.error(data.message || 'Session expired. Please sign in again.');
+                    setIsProcessing(false);
+                    navigate('/signin');
+                    return;
+                }
                 throw new Error(data.message || 'Unable to place order. Please try again.');
-            }
-
-            if (!data.key && data.order) {
-                toast.success('Order placed (Cash on Delivery)');
-                localStorage.removeItem('cart');
-                navigate('/payment-success', { replace: true });
-                return;
             }
 
             const resScript = await loadRazorpayScript();
@@ -108,6 +121,13 @@ export default function Checkout() {
                         });
 
                         const verifyData = await verifyResp.json();
+                        if (verifyResp.status === 401) {
+                            localStorage.removeItem('artstore_token');
+                            localStorage.removeItem('artstore_user');
+                            toast.error(verifyData.message || 'Session expired. Please sign in again.');
+                            navigate('/signin');
+                            return;
+                        }
                         if (verifyData.success) {
                             localStorage.removeItem('cart');
                             navigate('/payment-success', { replace: true });
@@ -117,11 +137,14 @@ export default function Checkout() {
                     } catch (err) {
                         console.error('Verification error', err);
                         navigate('/payment-failure', { replace: true });
+                    } finally {
+                        setIsProcessing(false);
                     }
                 },
                 modal: {
                     ondismiss: function () {
                         toast('Payment cancelled');
+                        setIsProcessing(false);
                     },
                 },
             };
@@ -130,11 +153,10 @@ export default function Checkout() {
             rzp.open();
         } catch (error) {
             console.error(error);
+            setIsProcessing(false);
             toast.error(error.message === 'Failed to fetch'
                 ? 'Unable to place order. Please try again.'
                 : error.message || 'Unable to place order. Please try again.');
-        } finally {
-            setIsProcessing(false);
         }
     };
 
@@ -177,14 +199,13 @@ export default function Checkout() {
 
                         <div className="form-group full-width">
                             <label>Payment Method</label>
-                            <select name="payment" value={formData.payment} onChange={handleChange}>
-                                <option>Cash on Delivery</option>
-                                <option>UPI</option>
+                            <select name="payment" value="Razorpay" disabled>
+                                <option value="Razorpay">Online Payment (UPI, Cards, NetBanking via Razorpay)</option>
                             </select>
                         </div>
 
                         <button type="submit" className="place-order-btn" disabled={isProcessing}>
-                            {isProcessing ? 'Processing…' : '🛍️ Place Order'}
+                            {isProcessing ? 'Processing…' : '💳 Pay with Razorpay'}
                         </button>
                     </form>
                 </div>

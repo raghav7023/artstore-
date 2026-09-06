@@ -36,6 +36,48 @@
     font-size: 1rem;
 }
 
+/* Info box below the main description */
+.custom-intro-box {
+    margin-top: 28px;
+    padding: 24px;
+    background: var(--bg-soft);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    text-align: center;
+}
+
+.custom-intro-box h2 {
+    font-family: var(--font-heading);
+    font-size: 1.3rem;
+    color: var(--text);
+    margin-bottom: 10px;
+}
+
+.custom-intro-box p {
+    color: var(--text-muted);
+    font-size: 0.97rem;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+/* Prominent CTA button */
+.custom-cta-btn {
+    display: inline-block;
+    padding: 13px 30px;
+    background: linear-gradient(135deg, var(--pink), var(--pink-dark));
+    color: #fff;
+    border-radius: var(--radius-full);
+    font-size: 1rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.custom-cta-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 22px rgba(47, 91, 211, 0.22);
+}
+
 .custom-form {
     display: grid;
     grid-template-columns: 1fr 1fr;

@@ -2,6 +2,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import Navbar from '../Navbar/Navbar.jsx';
 import { allProducts } from '../Products/Products.jsx';
+import { DELIVERY_CHARGES } from '../../config/delivery.js';
 import './ProductDetail.css';
 
 const formatDisplayName = (value) => value.replace(/\b\w/g, (letter) => letter.toUpperCase());
@@ -58,6 +59,26 @@ export default function ProductDetail() {
               <p className="product-detail-category">{formatDisplayName(product.category)}</p>
               <h1>{product.name}</h1>
               <p className="product-detail-price">₹{product.price}</p>
+
+              {/* ── Delivery Information ── */}
+              {product.category?.toLowerCase() === 'crochet' ? (
+                <div className="product-delivery-info">
+                  <span className="delivery-icon">🚚</span>
+                  <div>
+                    <strong>Delivery: ₹{DELIVERY_CHARGES.crochet}</strong>
+                    <p>Flat delivery fee for the entire order — not per item.</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="product-delivery-info">
+                  <span className="delivery-icon">🚚</span>
+                  <div>
+                    <strong>Delivery Charges</strong>
+                    <p>Delivery charges vary according to product size / category.</p>
+                  </div>
+                </div>
+              )}
+
               {product.subcategory && (
                 <p className="product-detail-meta"><strong>Type:</strong> {formatDisplayName(product.subcategory)}</p>
               )}

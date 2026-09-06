@@ -33,6 +33,13 @@ export const protect = async (req, res, next) => {
     // "Bearer eyJhbGci..." → "eyJhbGci..."
     const token = authHeader.split(' ')[1];
 
+    if (!token || token === 'undefined' || token === 'null') {
+      return res.status(401).json({
+        success: false,
+        message: 'Please sign in to access this page.',
+      });
+    }
+
     // Step 2: Token verify karo
     // jwt.verify checks: 1) Token valid hai? 2) Expire toh nahi hua?
     const decoded = jwt.verify(token, JWT_SECRET);

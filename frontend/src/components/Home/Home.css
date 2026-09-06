@@ -171,6 +171,17 @@
   box-shadow: var(--shadow-lg);
 }
 
+/* Resets browser button styles so the featured card button
+   looks identical to a regular div card */
+.featured-card-btn {
+  border: 1px solid var(--border);
+  background: white;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+}
+
 /* Image wrapper — overflow hidden for zoom effect */
 .product-card-img {
   overflow: hidden;
@@ -319,4 +330,84 @@
   .product-card-img {
     height: 160px;
   }
+
+  /* Custom order section — stack text on small screens */
+  .custom-order-section {
+    padding: 40px 16px;
+  }
+
+  .custom-order-title {
+    font-size: 1.5rem;
+  }
+}
+
+/* ==========================================
+   CUSTOM ORDER PROMO SECTION
+   Sits between Shop by Category and Featured Collection.
+   Styled as a standalone banner — NOT a category card.
+   ========================================== */
+
+.custom-order-section {
+  /* Soft gradient background to make it visually distinct */
+  background: linear-gradient(135deg, #fff5f8 0%, #f0f4ff 100%);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 64px 24px;
+  text-align: center;
+}
+
+/* Inner wrapper — keeps content centred and readable */
+.custom-order-content {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+/* Small label tag above the heading */
+.custom-order-tag {
+  display: inline-block;
+  padding: 4px 14px;
+  background: rgba(47, 91, 211, 0.1);
+  color: #2F5BD3;
+  border-radius: var(--radius-full);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+/* Main heading */
+.custom-order-title {
+  font-family: var(--font-heading);
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  color: var(--text);
+  margin-bottom: 12px;
+  line-height: 1.2;
+}
+
+/* Description text */
+.custom-order-desc {
+  font-size: 1rem;
+  color: var(--text-muted);
+  line-height: 1.7;
+  margin-bottom: 28px;
+}
+
+/* Prominent CTA button — links to existing /custom-orders page */
+.custom-order-btn {
+  display: inline-block;
+  padding: 14px 32px;
+  background: var(--pink);
+  color: #fff;
+  border-radius: var(--radius-full);
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background var(--speed), transform var(--speed), box-shadow var(--speed);
+}
+
+.custom-order-btn:hover {
+  background: var(--pink-dark);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(47, 91, 211, 0.2);
 }
