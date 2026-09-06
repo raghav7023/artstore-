@@ -108,8 +108,8 @@ export const allProducts = [
 
 
   { id: 150, name: 'Sunflower Lily Bouquet', category: 'Bouquets', price: 2649, image: '/images/bouquets/b1.jpeg' },
-  { id: 151, name: '100 Roses Bouquet', category: 'Bouquets', price: 16999, image: '/images/bouquets/b2.jpeg' },
-  { id: 153, name: 'Lily Tulip Bouquet', category: 'Bouquets', price: 5099, image: '/images/bouquets/b3.jpeg' },
+  // { id: 151, name: '100 Roses Bouquet', category: 'Bouquets', price: 16999, image: '/images/bouquets/b2.jpeg' },
+  // { id: 153, name: 'Lily Tulip Bouquet', category: 'Bouquets', price: 5099, image: '/images/bouquets/b3.jpeg' },
   { id: 154, name: 'Sunflower Dasy Bouquet', category: 'Bouquets', price: 1799, image: '/images/bouquets/b4.jpeg' },
   { id: 156, name: 'Rose Bouquet', category: 'Bouquets', price: 1499, image: '/images/bouquets/b6.jpeg' },
   { id: 158, name: 'Tulip Lily Bouquet', category: 'Bouquets', price: 1599, image: '/images/bouquets/b8.jpeg' },
