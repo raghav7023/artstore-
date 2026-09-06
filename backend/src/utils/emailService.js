@@ -262,6 +262,9 @@ export const sendCustomOrderOwnerEmail = async (customOrder) => {
     const deliveryDate = customOrder.delivery || 'Not specified';
     const description = customOrder.message || 'No description provided';
     const budget = customOrder.budget ? `Rs.${customOrder.budget}` : 'N/A';
+    const createdAt = customOrder.createdAt
+      ? new Date(customOrder.createdAt).toLocaleString()
+      : new Date().toLocaleString();
 
     let imageInfo = 'None provided';
     if (customOrder.image && typeof customOrder.image === 'string' && customOrder.image.trim() !== '') {
@@ -277,7 +280,7 @@ export const sendCustomOrderOwnerEmail = async (customOrder) => {
     const mailOptions = {
       from: `"Art Store" <${EMAIL_USER}>`,
       to: ownerEmail,
-      subject: `🎨 New Custom Order Received - Art Store #${orderId}`,
+      subject: `New Custom Order Received - Art Store #${orderId}`,
       text: `
 New Custom Order Received!
 
@@ -286,26 +289,27 @@ A customer has submitted a new custom order on Art Store.
 ----------------------------------------------
 CUSTOM ORDER DETAILS
 ----------------------------------------------
-Order ID        : #${orderId}
-Product Type    : ${productType}
-Preferred Color : ${preferredColor}
+Custom Order ID : #${orderId}
+Product / Type  : ${productType}
+Color           : ${preferredColor}
 Delivery Date   : ${deliveryDate}
 Budget          : ${budget}
+Created At      : ${createdAt}
 
 ----------------------------------------------
 CUSTOMER INFORMATION
 ----------------------------------------------
-Name  : ${customerName}
-Email : ${customerEmail}
-Phone : ${customerPhone}
+Customer Name   : ${customerName}
+Customer Email  : ${customerEmail}
+Customer Phone  : ${customerPhone}
 
 ----------------------------------------------
-ORDER DESCRIPTION / MESSAGE
+CUSTOMER MESSAGE / DESCRIPTION
 ----------------------------------------------
 ${description}
 
 ----------------------------------------------
-REFERENCE IMAGE
+REFERENCE IMAGE INFORMATION
 ----------------------------------------------
 ${imageInfo}
 ----------------------------------------------
@@ -313,10 +317,10 @@ ${imageInfo}
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log(`Store owner custom order notification sent for Order #${orderId} to ${ownerEmail}`);
+    console.log(`Custom order owner email sent successfully for Order #${orderId} to ${ownerEmail}`);
     return info;
   } catch (error) {
-    console.error(`Failed to send store owner custom order email for Order #${customOrder?._id || 'unknown'}:`, error.message);
+    console.error(`Custom order owner email failed: ${error.message}`);
   }
 };
 
@@ -336,6 +340,7 @@ export const sendCustomOrderCustomerEmail = async (customOrder) => {
 
     const orderId = customOrder._id ? customOrder._id.toString() : 'N/A';
     const customerName = customOrder.name || 'Customer';
+    const storeContactEmail = ORDER_NOTIFICATION_EMAIL || EMAIL_USER;
 
     const mailOptions = {
       from: `"Art Store" <${EMAIL_USER}>`,
@@ -345,24 +350,28 @@ export const sendCustomOrderCustomerEmail = async (customOrder) => {
 Dear ${customerName},
 
 Thank you for your custom order request!
-We have received your custom order (#${orderId}) and are reviewing your details.
+We have received your custom order (#${orderId}) and our team is currently reviewing your details.
 
 ----------------------------------------------
 CUSTOM ORDER DETAILS
 ----------------------------------------------
-Order ID        : #${orderId}
-Product Type    : ${customOrder.product || 'N/A'}
-Preferred Color : ${customOrder.color || 'Not specified'}
+Custom Order ID : #${orderId}
+Product / Type  : ${customOrder.product || 'N/A'}
+Color           : ${customOrder.color || 'Not specified'}
 Delivery Date   : ${customOrder.delivery || 'Not specified'}
 
 ----------------------------------------------
-YOUR REQUEST
+YOUR MESSAGE
 ----------------------------------------------
 ${customOrder.message || 'N/A'}
 
 ----------------------------------------------
+STATUS: REQUEST RECEIVED
+----------------------------------------------
 We will review your requirements and get in touch with you shortly.
-If you have any questions, feel free to reply to this email.
+
+STORE CONTACT:
+Email: ${storeContactEmail}
 
 Warm regards,
 Art Store Team
@@ -370,10 +379,10 @@ Art Store Team
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log(`Customer custom order confirmation sent for Order #${orderId} to ${customerEmail}`);
+    console.log(`Custom order customer email sent successfully for Order #${orderId} to ${customerEmail}`);
     return info;
   } catch (error) {
-    console.error(`Failed to send customer custom order email for Order #${customOrder?._id || 'unknown'}:`, error.message);
+    console.error(`Custom order customer email failed: ${error.message}`);
   }
 };
 
