@@ -27,8 +27,10 @@ const calculateAmountFromProducts = (products) => {
     if (qty <= 0 || price < 0) throw new Error('Invalid product data');
     total += qty * price;
   }
-  // convert to paise
-  return Math.round(total * 100);
+
+  // Keep the server total consistent with the checkout page delivery charge.
+  const delivery = total > 0 ? 50 : 0;
+  return Math.round((total + delivery) * 100);
 };
 
 // POST /api/payments/create-order

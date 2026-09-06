@@ -45,7 +45,8 @@ const signupValidation = [
     .withMessage('Password must contain at least one number'),
 
   body('phone')
-    .optional() // Phone optional hai
+    // Empty phone values are allowed; validate only when a number is entered.
+    .optional({ values: 'falsy' })
     .isMobilePhone('en-IN') // Indian mobile number format
     .withMessage('Please enter a valid Indian mobile number'),
 ];

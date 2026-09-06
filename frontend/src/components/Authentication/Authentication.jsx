@@ -95,6 +95,10 @@ export default function Authentication() {
         setError('Password must contain at least one number.');
         return false;
       }
+      if (formData.phone.trim() && !/^(?:\+91[\s-]?)?[6-9]\d{9}$/.test(formData.phone.trim())) {
+        setError('Please enter a valid Indian mobile number.');
+        return false;
+      }
     }
 
     if (!formData.email.trim()) {
@@ -171,7 +175,7 @@ export default function Authentication() {
       }
     } catch (err) {
       console.error('Auth Error:', err);
-      setError('Cannot connect to server. Please make sure the backend is running on port 2026.');
+      setError('Cannot connect to the server. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -316,7 +320,7 @@ export default function Authentication() {
             <div className="form-group">
               <label className="form-label" htmlFor="phone">
                 Mobile Number{' '}
-                <span style={{ color: '#c5b8b4', fontWeight: 400 }}>(optional)</span>
+                <span style={{ color: '#c5b8b4', fontWeight: 400 }}></span>
               </label>
               <input
                 className="form-input"
