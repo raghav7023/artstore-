@@ -1,6 +1,7 @@
 import { validationResult } from 'express-validator';
 import CustomOrder from '../models/CustomOrder.model.js';
 import { WHATSAPP_ACCESS_TOKEN, WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_TO_NUMBER } from '../../Config.mjs';
+import { sendCustomOrderEmails } from '../utils/emailService.js';
 
 const sendWhatsAppNotification = async (orderData) => {
   if (!WHATSAPP_ACCESS_TOKEN || !WHATSAPP_PHONE_NUMBER_ID || !WHATSAPP_TO_NUMBER) {
@@ -65,7 +66,9 @@ export const createCustomOrder = async (req, res) => {
       image: image || '',
     });
 
-    await sendWhatsAppNotification(customOrder.toObject ? customOrder.toObject() : customOrder);
+    const orderData = customOrder.toObject ? customOrder.toObject() : customOrder;
+    void sendWhatsAppNotification(orderData);
+    void sendCustomOrderEmails(orderData);
 
     res.status(201).json({
       success: true,

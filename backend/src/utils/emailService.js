@@ -237,7 +237,175 @@ export const sendOrderEmails = async (order) => {
 };
 
 // ============================================================
-// 4. VERIFY EMAIL CONFIGURATION (SAFE - NEVER LOGS SECRETS)
+// 4. STORE OWNER CUSTOM ORDER EMAIL
+// ============================================================
+export const sendCustomOrderOwnerEmail = async (customOrder) => {
+  try {
+    const transporter = createTransporter();
+    if (!transporter) {
+      console.warn('Custom order email skipped: EMAIL_USER or EMAIL_PASSWORD not configured.');
+      return;
+    }
+
+    const ownerEmail = ORDER_NOTIFICATION_EMAIL || EMAIL_USER;
+    if (!ownerEmail) {
+      console.warn('Store owner email not specified. Skipping custom order owner notification.');
+      return;
+    }
+
+    const orderId = customOrder._id ? customOrder._id.toString() : 'N/A';
+    const customerName = customOrder.name || 'N/A';
+    const customerEmail = customOrder.email || 'N/A';
+    const customerPhone = customOrder.phone || 'N/A';
+    const productType = customOrder.product || 'N/A';
+    const preferredColor = customOrder.color || 'Not specified';
+    const deliveryDate = customOrder.delivery || 'Not specified';
+    const description = customOrder.message || 'No description provided';
+    const budget = customOrder.budget ? `Rs.${customOrder.budget}` : 'N/A';
+
+    let imageInfo = 'None provided';
+    if (customOrder.image && typeof customOrder.image === 'string' && customOrder.image.trim() !== '') {
+      if (customOrder.image.startsWith('http')) {
+        imageInfo = customOrder.image;
+      } else if (customOrder.image.startsWith('blob:') || customOrder.image.startsWith('data:')) {
+        imageInfo = 'Reference image attached/selected by customer in form';
+      } else {
+        imageInfo = customOrder.image;
+      }
+    }
+
+    const mailOptions = {
+      from: `"Art Store" <${EMAIL_USER}>`,
+      to: ownerEmail,
+      subject: `🎨 New Custom Order Received - Art Store #${orderId}`,
+      text: `
+New Custom Order Received!
+
+A customer has submitted a new custom order on Art Store.
+
+----------------------------------------------
+CUSTOM ORDER DETAILS
+----------------------------------------------
+Order ID        : #${orderId}
+Product Type    : ${productType}
+Preferred Color : ${preferredColor}
+Delivery Date   : ${deliveryDate}
+Budget          : ${budget}
+
+----------------------------------------------
+CUSTOMER INFORMATION
+----------------------------------------------
+Name  : ${customerName}
+Email : ${customerEmail}
+Phone : ${customerPhone}
+
+----------------------------------------------
+ORDER DESCRIPTION / MESSAGE
+----------------------------------------------
+${description}
+
+----------------------------------------------
+REFERENCE IMAGE
+----------------------------------------------
+${imageInfo}
+----------------------------------------------
+      `.trim(),
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`Store owner custom order notification sent for Order #${orderId} to ${ownerEmail}`);
+    return info;
+  } catch (error) {
+    console.error(`Failed to send store owner custom order email for Order #${customOrder?._id || 'unknown'}:`, error.message);
+  }
+};
+
+// ============================================================
+// 5. CUSTOMER CUSTOM ORDER CONFIRMATION EMAIL
+// ============================================================
+export const sendCustomOrderCustomerEmail = async (customOrder) => {
+  try {
+    const transporter = createTransporter();
+    if (!transporter) return;
+
+    const customerEmail = customOrder.email;
+    if (!customerEmail) {
+      console.warn(`Customer email missing for Custom Order #${customOrder?._id || 'unknown'}. Skipping customer email.`);
+      return;
+    }
+
+    const orderId = customOrder._id ? customOrder._id.toString() : 'N/A';
+    const customerName = customOrder.name || 'Customer';
+
+    const mailOptions = {
+      from: `"Art Store" <${EMAIL_USER}>`,
+      to: customerEmail,
+      subject: `Custom Order Confirmation - Art Store #${orderId}`,
+      text: `
+Dear ${customerName},
+
+Thank you for your custom order request!
+We have received your custom order (#${orderId}) and are reviewing your details.
+
+----------------------------------------------
+CUSTOM ORDER DETAILS
+----------------------------------------------
+Order ID        : #${orderId}
+Product Type    : ${customOrder.product || 'N/A'}
+Preferred Color : ${customOrder.color || 'Not specified'}
+Delivery Date   : ${customOrder.delivery || 'Not specified'}
+
+----------------------------------------------
+YOUR REQUEST
+----------------------------------------------
+${customOrder.message || 'N/A'}
+
+----------------------------------------------
+We will review your requirements and get in touch with you shortly.
+If you have any questions, feel free to reply to this email.
+
+Warm regards,
+Art Store Team
+      `.trim(),
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`Customer custom order confirmation sent for Order #${orderId} to ${customerEmail}`);
+    return info;
+  } catch (error) {
+    console.error(`Failed to send customer custom order email for Order #${customOrder?._id || 'unknown'}:`, error.message);
+  }
+};
+
+// ============================================================
+// 6. COMBINED HELPER: sendCustomOrderEmails(customOrder)
+// ============================================================
+export const sendCustomOrderEmails = async (customOrder) => {
+  if (!customOrder) return;
+
+  const orderId = customOrder._id ? customOrder._id.toString() : null;
+
+  // Prevent duplicate sends for the same custom order
+  if (orderId) {
+    const cacheKey = `custom_${orderId}`;
+    if (processedOrders.has(cacheKey)) {
+      console.log(`Custom Order #${orderId} emails already processed. Skipping duplicate.`);
+      return;
+    }
+    processedOrders.add(cacheKey);
+    const timer = setTimeout(() => processedOrders.delete(cacheKey), 3600000);
+    if (timer.unref) timer.unref();
+  }
+
+  // Send both emails in parallel, neither can throw to the caller
+  await Promise.allSettled([
+    sendCustomOrderOwnerEmail(customOrder),
+    sendCustomOrderCustomerEmail(customOrder),
+  ]);
+};
+
+// ============================================================
+// 7. VERIFY EMAIL CONFIGURATION (SAFE - NEVER LOGS SECRETS)
 // ============================================================
 export const verifyEmailConfiguration = async () => {
   const transporter = createTransporter();
