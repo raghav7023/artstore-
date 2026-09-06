@@ -9,8 +9,8 @@
 }
 
 .custom-container {
-    max-width: 900px;
-    margin: 40px auto;
+    max-width: 720px;
+    margin: 50px auto;
     padding: 40px;
     background: #fff;
     border: 1px solid var(--border);
@@ -19,55 +19,98 @@
     animation: fadeUp .5s ease;
 }
 
-.custom-header {
+.custom-info-box {
     text-align: center;
-    margin-bottom: 35px;
+    padding: 10px 0;
 }
 
-.custom-header h1 {
+.custom-title {
     font-family: var(--font-heading);
     color: var(--pink);
-    font-size: 2.2rem;
-    margin-bottom: 10px;
+    font-size: 2.1rem;
+    margin-bottom: 20px;
+    line-height: 1.3;
 }
 
-.custom-header p {
+.custom-description {
+    color: var(--text);
+    font-size: 1.15rem;
+    line-height: 1.7;
+    margin-bottom: 16px;
+    max-width: 580px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.custom-tagline {
     color: var(--text-muted);
-    font-size: 1rem;
+    font-size: 1.05rem;
+    font-weight: 500;
+    margin-bottom: 30px;
 }
 
-/* Info box below the main description */
-.custom-intro-box {
-    margin-top: 28px;
-    padding: 24px;
+/* Contact box */
+.custom-contact-card {
     background: var(--bg-soft);
     border: 1.5px solid var(--border);
     border-radius: var(--radius-lg);
-    text-align: center;
+    padding: 24px;
+    margin: 25px auto;
+    max-width: 560px;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
-.custom-intro-box h2 {
-    font-family: var(--font-heading);
-    font-size: 1.3rem;
+.custom-contact-row {
+    margin: 0;
+    font-size: 1rem;
     color: var(--text);
-    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    word-break: break-all;
+    overflow-wrap: anywhere;
 }
 
-.custom-intro-box p {
-    color: var(--text-muted);
-    font-size: 0.97rem;
-    line-height: 1.6;
-    margin-bottom: 20px;
+.contact-icon {
+    font-size: 1.2rem;
+}
+
+.custom-link {
+    color: var(--pink);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s ease, text-decoration 0.2s ease;
+}
+
+.custom-link:hover {
+    color: var(--pink-dark);
+    text-decoration: underline;
+}
+
+.custom-ig-username {
+    font-size: 1.08rem;
+}
+
+.custom-full-url {
+    font-size: 0.92rem;
 }
 
 /* Prominent CTA button */
+.custom-cta-wrap {
+    margin-top: 30px;
+}
+
 .custom-cta-btn {
     display: inline-block;
-    padding: 13px 30px;
+    padding: 14px 34px;
     background: linear-gradient(135deg, var(--pink), var(--pink-dark));
     color: #fff;
     border-radius: var(--radius-full);
-    font-size: 1rem;
+    font-size: 1.05rem;
     font-weight: 700;
     text-decoration: none;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
@@ -75,109 +118,11 @@
 
 .custom-cta-btn:hover {
     transform: translateY(-3px);
-    box-shadow: 0 10px 22px rgba(47, 91, 211, 0.22);
-}
-
-.custom-form {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 22px;
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
-}
-
-.form-group label {
-    font-weight: 600;
-    margin-bottom: 8px;
-    color: var(--text);
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-    width: 100%;
-    padding: 14px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    background: #fff;
-    font-size: .95rem;
-    transition: .3s;
-    outline: none;
-}
-
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-    border-color: var(--pink);
-    box-shadow: 0 0 0 4px rgba(47, 91, 211, .15);
-}
-
-.form-group textarea {
-    resize: none;
-    min-height: 140px;
-}
-/* ==========================================
-   Full Width Fields
-========================================== */
-
-.form-group:nth-last-child(2),
-.form-group:last-of-type {
-    grid-column: 1/3;
-}
-
-/* ==========================================
-   File Upload
-========================================== */
-
-input[type="file"] {
-    padding: 12px;
-    background: #fff8fb;
-    cursor: pointer;
-}
-
-input[type="file"]::file-selector-button {
-    background: var(--pink);
+    box-shadow: 0 10px 22px rgba(47, 91, 211, 0.25);
     color: #fff;
-    border: none;
-    padding: 10px 16px;
-    border-radius: 8px;
-    cursor: pointer;
-    margin-right: 12px;
-    transition: .3s;
 }
 
-input[type="file"]::file-selector-button:hover {
-    background: var(--pink-dark);
-}
-
-/* ==========================================
-   Submit Button
-========================================== */
-
-.submit-btn {
-    grid-column: 1/3;
-    width: 100%;
-    padding: 16px;
-    border: none;
-    border-radius: var(--radius-md);
-    background: linear-gradient(135deg, var(--pink), var(--pink-dark));
-    color: #fff;
-    font-size: 1rem;
-    font-weight: 700;
-    cursor: pointer;
-    transition: .3s;
-    margin-top: 10px;
-}
-
-.submit-btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 12px 24px rgba(47, 91, 211, .25);
-}
-
-.submit-btn:active {
+.custom-cta-btn:active {
     transform: scale(.98);
 }
 
@@ -186,50 +131,53 @@ input[type="file"]::file-selector-button:hover {
 ========================================== */
 
 @keyframes fadeUp {
-
     from {
         opacity: 0;
-        transform: translateY(30px);
+        transform: translateY(20px);
     }
-
     to {
         opacity: 1;
         transform: translateY(0);
     }
-
 }
 
 /* ==========================================
    Mobile Responsive
 ========================================== */
 
-@media(max-width:768px) {
-
+@media (max-width: 768px) {
     .custom-container {
-        margin: 20px;
-        padding: 24px;
+        margin: 20px 16px;
+        padding: 28px 20px;
     }
 
-    .custom-form {
-        grid-template-columns: 1fr;
+    .custom-title {
+        font-size: 1.65rem;
     }
 
-    .form-group:nth-last-child(2),
-    .form-group:last-of-type,
-    .submit-btn {
-        grid-column: 1/2;
+    .custom-description {
+        font-size: 1.02rem;
     }
 
-    .custom-header h1 {
-        font-size: 1.8rem;
+    .custom-tagline {
+        font-size: 0.95rem;
     }
 
-}
-.preview-image {
-    width: 180px;
-    margin-top: 15px;
-    border-radius: 12px;
-    border: 2px solid #ffd4e5;
-    object-fit: cover;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, .1);
+    .custom-contact-card {
+        padding: 18px 16px;
+    }
+
+    .custom-contact-row {
+        font-size: 0.92rem;
+    }
+
+    .custom-full-url {
+        font-size: 0.82rem;
+    }
+
+    .custom-cta-btn {
+        width: 100%;
+        padding: 14px 20px;
+        font-size: 1rem;
+    }
 }
