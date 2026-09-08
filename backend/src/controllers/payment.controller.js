@@ -35,10 +35,10 @@ const calculateAmountFromProducts = (products) => {
   return Math.round((total + delivery) * 100);
 };
 
-// POST /api/payments/create-order
+// POST /api/payments/create-order or /api/create-order
 export const createPaymentOrder = async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = req.user?.id || req.user?._id;
 
     const {
       name,
@@ -49,15 +49,10 @@ export const createPaymentOrder = async (req, res) => {
       pincode,
       payment, // payment method selected
       products,
+      amount,
+      currency = 'INR',
+      receipt,
     } = req.body;
-
-    // Basic validation
-    if (!products || !Array.isArray(products) || products.length === 0) {
-      return res.status(400).json({ success: false, message: 'Products are required' });
-    }
-
-    // Recalculate amount on server — do NOT trust frontend total
-    const amountInPaise = calculateAmountFromProducts(products);
 
     // Reject Cash on Delivery — only Razorpay online payment is accepted
     if (payment === 'Cash on Delivery' || payment === 'cod' || payment?.toLowerCase() === 'cash on delivery') {
@@ -71,67 +66,96 @@ export const createPaymentOrder = async (req, res) => {
       return res.status(500).json({ success: false, message: 'Payment gateway not configured' });
     }
 
+    // Determine amount in paise (minimum 100 paise = Rs. 1)
+    let amountInPaise = 0;
+    if (products && Array.isArray(products) && products.length > 0) {
+      // Recalculate amount on server for cart items — do NOT trust frontend total
+      amountInPaise = calculateAmountFromProducts(products);
+    } else if (amount) {
+      amountInPaise = Math.round(Number(amount));
+    } else {
+      return res.status(400).json({ success: false, message: 'Products or amount is required' });
+    }
+
+    // Validate minimum amount (Razorpay requires minimum 100 paise)
+    if (!amountInPaise || isNaN(amountInPaise) || amountInPaise < 100) {
+      return res.status(400).json({
+        success: false,
+        message: 'Amount must be at least 100 paise (₹1)',
+      });
+    }
+
     // Create Razorpay order
     const options = {
       amount: amountInPaise,
-      currency: 'INR',
-      receipt: `rcpt_${Date.now()}`,
+      currency: currency || 'INR',
+      receipt: receipt || `rcpt_${Date.now()}`,
       payment_capture: 1,
     };
 
     const rOrder = await razorpay.orders.create(options);
 
-    // Save a payment attempt to track and later create final order after verification
-    const attempt = await PaymentAttempt.create({
-      user: userId,
-      razorpay_order_id: rOrder.id,
-      amount: amountInPaise,
-      currency: 'INR',
-      products,
-      customer: { name, email, phone, address, city, pincode },
-      status: 'created',
-    });
+    // Save a payment attempt if user & products/customer info available
+    let attempt = null;
+    if (userId) {
+      attempt = await PaymentAttempt.create({
+        user: userId,
+        razorpay_order_id: rOrder.id,
+        amount: amountInPaise,
+        currency: currency || 'INR',
+        products: products || [],
+        customer: { name: name || '', email: email || '', phone: phone || '', address: address || '', city: city || '', pincode: pincode || '' },
+        status: 'created',
+      });
+    }
 
-    // Return necessary info to frontend (key id + order)
+    // Return standard Razorpay order information to client
     res.status(200).json({
       success: true,
       key: RAZORPAY_KEY_ID,
       order: rOrder,
-      attemptId: attempt._id,
+      order_id: rOrder.id,
+      amount: rOrder.amount,
+      currency: rOrder.currency,
+      attemptId: attempt ? attempt._id : undefined,
     });
   } catch (error) {
     console.error('Create Payment Order Error:', error);
-    res.status(500).json({ success: false, message: 'Unable to create payment order' });
+    res.status(500).json({ success: false, message: error.message || 'Unable to create payment order' });
   }
 };
 
-// POST /api/payments/verify
+// POST /api/payments/verify or /api/verify-payment
 export const verifyPayment = async (req, res) => {
   try {
     if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
       return res.status(500).json({ success: false, message: 'Payment gateway not configured' });
     }
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    const rOrderId = req.body.razorpay_order_id || req.body.order_id;
+    const rPaymentId = req.body.razorpay_payment_id || req.body.payment_id;
+    const rSignature = req.body.razorpay_signature || req.body.signature;
+
+    if (!rOrderId || !rPaymentId || !rSignature) {
       return res.status(400).json({ success: false, message: 'Missing payment verification fields' });
     }
 
-    // Compute expected signature
+    // Compute expected signature using HMAC-SHA256(order_id + "|" + payment_id, KEY_SECRET)
     const generated_signature = crypto
       .createHmac('sha256', RAZORPAY_KEY_SECRET)
-      .update(razorpay_order_id + '|' + razorpay_payment_id)
+      .update(rOrderId + '|' + rPaymentId)
       .digest('hex');
 
-    if (generated_signature !== razorpay_signature) {
-      console.warn('Invalid Razorpay signature', { razorpay_order_id, razorpay_payment_id });
+    if (generated_signature !== rSignature) {
+      console.warn('Invalid Razorpay signature', { rOrderId, rPaymentId });
       return res.status(400).json({ success: false, message: 'Invalid payment signature' });
     }
 
     // Find corresponding payment attempt
-    const attempt = await PaymentAttempt.findOne({ razorpay_order_id });
+    const attempt = await PaymentAttempt.findOne({ razorpay_order_id: rOrderId });
     if (!attempt) {
-      return res.status(404).json({ success: false, message: 'Payment attempt not found' });
+      // Valid signature even if standalone verification without previous attempt in DB
+      return res.status(200).json({ success: true, message: 'Payment signature verified successfully' });
     }
 
     if (attempt.status === 'paid') {
@@ -146,20 +170,20 @@ export const verifyPayment = async (req, res) => {
     // Create final Order record (store razorpay ids)
     const newOrder = await Order.create({
       user: attempt.user,
-      name: attempt.customer.name,
-      email: attempt.customer.email,
-      phone: attempt.customer.phone,
-      address: attempt.customer.address,
-      city: attempt.customer.city,
-      pincode: attempt.customer.pincode,
+      name: attempt.customer?.name || 'Customer',
+      email: attempt.customer?.email || 'N/A',
+      phone: attempt.customer?.phone || 'N/A',
+      address: attempt.customer?.address || 'N/A',
+      city: attempt.customer?.city || 'N/A',
+      pincode: attempt.customer?.pincode || 'N/A',
       payment: 'Razorpay',
-      products: attempt.products,
+      products: attempt.products || [],
       total: attempt.amount / 100,
       // attach razorpay fields
       razorpay: {
-        order_id: razorpay_order_id,
-        payment_id: razorpay_payment_id,
-        signature: razorpay_signature,
+        order_id: rOrderId,
+        payment_id: rPaymentId,
+        signature: rSignature,
       },
     });
 

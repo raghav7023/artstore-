@@ -99,12 +99,20 @@ export default function Checkout() {
             const { key, order } = data;
 
             const options = {
-                key: key,
+                key: key || import.meta.env.VITE_RAZORPAY_KEY_ID,
                 amount: order.amount,
-                currency: order.currency,
+                currency: order.currency || 'INR',
                 name: 'Art Store',
                 description: 'Payment for order',
                 order_id: order.id,
+                prefill: {
+                    name: formData.name,
+                    email: formData.email,
+                    contact: formData.phone,
+                },
+                theme: {
+                    color: '#2f5bd3',
+                },
                 handler: async function (response) {
                     try {
                         const verifyResp = await fetch(`${API_BASE_URL}/api/payments/verify`, {
@@ -150,6 +158,11 @@ export default function Checkout() {
             };
 
             const rzp = new window.Razorpay(options);
+            rzp.on('payment.failed', function (response) {
+                console.error('Razorpay Payment Failed:', response.error);
+                toast.error(response.error?.description || response.error?.reason || 'Payment failed. Please try again.');
+                setIsProcessing(false);
+            });
             rzp.open();
         } catch (error) {
             console.error(error);

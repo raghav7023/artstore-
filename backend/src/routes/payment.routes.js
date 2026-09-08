@@ -9,5 +9,6 @@ router.post('/create-order', protect, createPaymentOrder);
 
 // Verify payment signature (protected)
 router.post('/verify', protect, verifyPayment);
+router.post('/verify-payment', protect, verifyPayment);
 
 export default router;
