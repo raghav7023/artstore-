@@ -43,7 +43,7 @@ const orderSchema = new mongoose.Schema(
         // Payment Method
         payment: {
             type: String,
-            default: "Cash on Delivery",
+            default: "Razorpay",
         },
 
         // Ordered Products
@@ -54,6 +54,8 @@ const orderSchema = new mongoose.Schema(
                 price: Number,
                 quantity: Number,
                 image: String,
+                category: String,
+                subcategory: String,
             },
         ],
 
@@ -81,4 +83,4 @@ const orderSchema = new mongoose.Schema(
     }
 );
 
-export default mongoose.model("Order", orderSchema);
+export default mongoose.models.Order || mongoose.model("Order", orderSchema);

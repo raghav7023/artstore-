@@ -37,6 +37,10 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:5173",
   "http://127.0.0.1:5173",
+  "http://localhost:5174",
+  "http://127.0.0.1:5174",
+  "http://localhost:4173",
+  "http://127.0.0.1:4173",
   "http://localhost:3000",
   "https://artstore-by-raghav.vercel.app",
   "https://artstorestudio.com",
@@ -45,13 +49,22 @@ const allowedOrigins = [
   ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim().replace(/\/+$/, '')) : []),
 ];
 
-app.use(
-  cors({
-    origin: Array.from(new Set(allowedOrigins)),
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true,
-  })
-);
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, server-to-server)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(null, false);
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // 2. Rate Limiting
 // Ye prevent karta hai: Brute force attacks (password guessing)

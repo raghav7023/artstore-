@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import Navbar from '../Navbar/Navbar.jsx';
@@ -149,6 +149,32 @@ export default function Products() {
   const [activeSubcategory, setActiveSubcategory] = useState(location?.state?.subcategory || 'All');
   const searchText = (location?.state?.search || '').toLowerCase();
 
+  useEffect(() => {
+    if (location?.state?.category !== undefined) {
+      setActiveFilter(location.state.category);
+    }
+    if (location?.state?.subcategory !== undefined) {
+      setActiveSubcategory(location.state.subcategory);
+    }
+  }, [location?.state]);
+
+  const handleFilterChange = (filter) => {
+    setActiveFilter(filter);
+    setActiveSubcategory('All');
+    navigate('/products', {
+      replace: true,
+      state: { category: filter, subcategory: 'All', search: searchText },
+    });
+  };
+
+  const handleSubcategoryChange = (subcategory) => {
+    setActiveSubcategory(subcategory);
+    navigate('/products', {
+      replace: true,
+      state: { category: activeFilter, subcategory, search: searchText },
+    });
+  };
+
   const addToCart = (product) => {
     const cart = JSON.parse(localStorage.getItem('cart')) || [];
     const existingProduct = cart.find((item) => item.id === product.id);
@@ -188,10 +214,7 @@ export default function Products() {
           <button
             key={filter}
             className={activeFilter === filter ? 'filter-btn active' : 'filter-btn'}
-            onClick={() => {
-              setActiveFilter(filter);
-              setActiveSubcategory('All');
-            }}
+            onClick={() => handleFilterChange(filter)}
           >
             {formatDisplayName(filter)}
           </button>
@@ -204,7 +227,7 @@ export default function Products() {
             <button
               key={subcategory}
               className={activeSubcategory === subcategory ? 'subcategory-btn active' : 'subcategory-btn'}
-              onClick={() => setActiveSubcategory(subcategory)}
+              onClick={() => handleSubcategoryChange(subcategory)}
             >
               {formatDisplayName(subcategory)}
             </button>

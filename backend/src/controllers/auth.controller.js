@@ -83,17 +83,22 @@ export const signup = async (req, res) => {
         id: newUser._id,
         name: newUser.name,
         email: newUser.email,
+        phone: newUser.phone,
         role: newUser.role,
         // NOTE: Password kabhi response mein mat bhejo!
       },
     });
   } catch (error) {
-    // Agar koi unexpected error aaye
     console.error('Signup Error:', error);
+    if (error.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: 'Email already registered. Please sign in instead.',
+      });
+    }
     res.status(500).json({
       success: false,
       message: 'Something went wrong. Please try again.',
-      // NOTE: Production mein actual error message mat bhejo - security risk!
     });
   }
 };
@@ -155,6 +160,7 @@ export const signin = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
+        phone: user.phone || '',
         role: user.role,
       },
     });

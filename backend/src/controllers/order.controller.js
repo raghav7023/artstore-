@@ -3,7 +3,7 @@ import { WHATSAPP_ACCESS_TOKEN, WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_TO_NUMBER } f
 import { getDeliveryCharge } from '../config/delivery.config.js';
 import { sendOrderEmails } from '../utils/emailService.js';
 
-const sendWhatsAppNotification = async (orderData, type = 'normal') => {
+export const sendWhatsAppNotification = async (orderData, type = 'normal') => {
     if (!WHATSAPP_ACCESS_TOKEN || !WHATSAPP_PHONE_NUMBER_ID || !WHATSAPP_TO_NUMBER) {
         console.log('WhatsApp notification skipped: missing credentials.');
         return;
@@ -43,77 +43,16 @@ const sendWhatsAppNotification = async (orderData, type = 'normal') => {
 };
 
 // ==========================================
-// Create New Order
+// Create New Order (Disabled for Direct Call)
 // POST /api/orders
+// All real orders must be created via verified Razorpay payment (/api/payments/verify)
 // ==========================================
 
 export const createOrder = async (req, res) => {
-
-    try {
-
-        const {
-            name,
-            email,
-            phone,
-            address,
-            city,
-            pincode,
-            payment,
-            products,
-            total,
-        } = req.body;
-
-        // Reject Cash on Delivery — only Razorpay online payment is accepted
-        if (payment === 'Cash on Delivery' || payment === 'cod' || payment?.toLowerCase() === 'cash on delivery') {
-            return res.status(400).json({
-                success: false,
-                message: 'Cash on Delivery is no longer accepted. Please use online payment (Razorpay).',
-            });
-        }
-
-        const productSubtotal = products.reduce(
-            (sum, product) => sum + Number(product.price) * Number(product.quantity),
-            0,
-        );
-        const delivery = getDeliveryCharge(products);
-
-        const newOrder = await Order.create({
-
-            // Logged in user ka id save hoga
-            user: req.user.id,
-
-            name,
-            email,
-            phone,
-            address,
-            city,
-            pincode,
-            payment,
-            products,
-            total: productSubtotal + delivery,
-
-        });
-
-        void sendWhatsAppNotification(newOrder.toObject(), 'normal');
-        void sendOrderEmails(newOrder.toObject());
-
-        res.status(201).json({
-            success: true,
-            message: "Order placed successfully!",
-            order: newOrder,
-        });
-
-    } catch (error) {
-
-        console.error("Order Error:", error);
-
-        res.status(500).json({
-            success: false,
-            message: "Failed to place order.",
-        });
-
-    }
-
+    return res.status(400).json({
+        success: false,
+        message: 'Direct order placement without payment verification is disabled. All orders must be placed through the verified online payment gateway (/api/payments/create-order).',
+    });
 };
 // ==========================================
 // Get All Orders

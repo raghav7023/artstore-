@@ -28,13 +28,14 @@ export default function App() {
         {/* Cart Page - NOTE: lowercase 'cart' (URL mein lowercase rakho) */}
         <Route path='/cart' element={<Cart />} />
 
-        {/* Order Page */}
-        <Route path='/order' element={<Order />} />
+        {/* Orders Page (My Orders for users, All Orders for admin) */}
+        <Route path='/order' element={<AdminOrders />} />
+        <Route path='/orders' element={<AdminOrders />} />
+        <Route path="/admin/orders" element={<AdminOrders />} />
         <Route path="/custom-orders" element={<Customorders />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="/payment-failure" element={<PaymentFailure />} />
-        <Route path="/admin/orders" element={<AdminOrders />} />
       </Routes>
     </div>
   )

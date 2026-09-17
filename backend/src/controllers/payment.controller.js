@@ -4,35 +4,55 @@ import PaymentAttempt from '../models/PaymentAttempt.model.js';
 import Order from '../models/Order.model.js';
 import { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET } from '../../Config.mjs';
 import { getDeliveryCharge } from '../config/delivery.config.js';
-// sendOrderEmails: sends store-owner + customer emails after a successful order
+import { products as catalogProducts } from '../data/products.data.js';
 import { sendOrderEmails } from '../utils/emailService.js';
+import { sendWhatsAppNotification } from './order.controller.js';
 
 // Lazily initialize Razorpay only if credentials are provided
 let razorpay = null;
-if (RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET) {
-  try {
-    razorpay = new Razorpay({ key_id: RAZORPAY_KEY_ID, key_secret: RAZORPAY_KEY_SECRET });
-  } catch (err) {
-    console.error('Razorpay init error:', err.message);
-    razorpay = null;
+const getRazorpayInstance = () => {
+  if (!razorpay && RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET) {
+    try {
+      razorpay = new Razorpay({ key_id: RAZORPAY_KEY_ID, key_secret: RAZORPAY_KEY_SECRET });
+    } catch (err) {
+      console.error('Razorpay init error:', err.message);
+      razorpay = null;
+    }
   }
-} else {
-  // Do not throw during startup; payment endpoints will return an error instead
-  razorpay = null;
-}
+  return razorpay;
+};
 
-// Helper: calculate amount from products array (in paise)
-const calculateAmountFromProducts = (products) => {
+// Helper: calculate amount from products array (in paise) and sanitize product data against catalog
+const sanitizeAndCalculateAmount = (products) => {
   let total = 0;
+  const sanitizedProducts = [];
+
   for (const p of products) {
-    const qty = Number(p.quantity) || 0;
-    const price = Number(p.price) || 0;
-    if (qty <= 0 || price < 0) throw new Error('Invalid product data');
+    const qty = Math.max(1, Math.floor(Number(p.quantity) || 1));
+    const catalogItem = catalogProducts.find((item) => item.id === Number(p.id));
+
+    // Enforce authoritative catalog price if found; otherwise validate p.price
+    const price = catalogItem ? Number(catalogItem.price) : Math.max(0, Number(p.price) || 0);
+    const name = catalogItem ? catalogItem.name : (p.name || 'Product');
+    const image = catalogItem ? catalogItem.image : (p.image || '');
+    const category = catalogItem ? catalogItem.category : (p.category || '');
+    const subcategory = catalogItem ? catalogItem.subcategory : (p.subcategory || '');
+
     total += qty * price;
+    sanitizedProducts.push({
+      id: p.id ? Number(p.id) : undefined,
+      name,
+      price,
+      quantity: qty,
+      image,
+      category,
+      subcategory,
+    });
   }
 
-  const delivery = getDeliveryCharge(products);
-  return Math.round((total + delivery) * 100);
+  const delivery = getDeliveryCharge(sanitizedProducts);
+  const amountInPaise = Math.round((total + delivery) * 100);
+  return { amountInPaise, sanitizedProducts };
 };
 
 // POST /api/payments/create-order or /api/create-order
@@ -62,15 +82,19 @@ export const createPaymentOrder = async (req, res) => {
       });
     }
 
-    if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
+    const rzp = getRazorpayInstance();
+    if (!rzp) {
       return res.status(500).json({ success: false, message: 'Payment gateway not configured' });
     }
 
     // Determine amount in paise (minimum 100 paise = Rs. 1)
     let amountInPaise = 0;
+    let orderProducts = [];
     if (products && Array.isArray(products) && products.length > 0) {
-      // Recalculate amount on server for cart items — do NOT trust frontend total
-      amountInPaise = calculateAmountFromProducts(products);
+      // Recalculate amount on server against authoritative catalog — do NOT trust frontend prices
+      const calculation = sanitizeAndCalculateAmount(products);
+      amountInPaise = calculation.amountInPaise;
+      orderProducts = calculation.sanitizedProducts;
     } else if (amount) {
       amountInPaise = Math.round(Number(amount));
     } else {
@@ -85,17 +109,17 @@ export const createPaymentOrder = async (req, res) => {
       });
     }
 
-    // Create Razorpay order
+    // Create Razorpay order (receipt max length is 40 chars)
     const options = {
       amount: amountInPaise,
       currency: currency || 'INR',
-      receipt: receipt || `rcpt_${Date.now()}`,
+      receipt: (receipt ? String(receipt) : `rcpt_${Date.now()}`).slice(0, 40),
       payment_capture: 1,
     };
 
-    const rOrder = await razorpay.orders.create(options);
+    const rOrder = await rzp.orders.create(options);
 
-    // Save a payment attempt if user & products/customer info available
+    // Save a payment attempt with sanitized products and customer info
     let attempt = null;
     if (userId) {
       attempt = await PaymentAttempt.create({
@@ -103,7 +127,7 @@ export const createPaymentOrder = async (req, res) => {
         razorpay_order_id: rOrder.id,
         amount: amountInPaise,
         currency: currency || 'INR',
-        products: products || [],
+        products: orderProducts.length > 0 ? orderProducts : (products || []),
         customer: { name: name || '', email: email || '', phone: phone || '', address: address || '', city: city || '', pincode: pincode || '' },
         status: 'created',
       });
@@ -146,21 +170,38 @@ export const verifyPayment = async (req, res) => {
       .update(rOrderId + '|' + rPaymentId)
       .digest('hex');
 
-    if (generated_signature !== rSignature) {
-      console.warn('Invalid Razorpay signature', { rOrderId, rPaymentId });
+    const expectedBuffer = Buffer.from(generated_signature, 'utf8');
+    const receivedBuffer = Buffer.from(rSignature, 'utf8');
+    const isSignatureValid =
+      expectedBuffer.length === receivedBuffer.length &&
+      crypto.timingSafeEqual(expectedBuffer, receivedBuffer);
+
+    if (!isSignatureValid) {
+      console.warn('Invalid Razorpay signature for order', rOrderId);
+      await PaymentAttempt.updateOne({ razorpay_order_id: rOrderId }, { status: 'failed' });
       return res.status(400).json({ success: false, message: 'Invalid payment signature' });
     }
 
     // Find corresponding payment attempt
     const attempt = await PaymentAttempt.findOne({ razorpay_order_id: rOrderId });
     if (!attempt) {
-      // Valid signature even if standalone verification without previous attempt in DB
-      return res.status(200).json({ success: true, message: 'Payment signature verified successfully' });
+      return res.status(404).json({ success: false, message: 'Payment attempt not found' });
+    }
+
+    // Authorization check: ensure caller owns this attempt
+    const currentUserId = req.user?.id || req.user?._id;
+    if (attempt.user && currentUserId && attempt.user.toString() !== currentUserId.toString() && req.user?.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Unauthorized verification attempt' });
     }
 
     if (attempt.status === 'paid') {
-      // Idempotency: already processed
-      return res.status(200).json({ success: true, message: 'Payment already processed' });
+      // Idempotency: return existing order, never duplicate
+      const existingOrder = await Order.findOne({ 'razorpay.order_id': rOrderId });
+      return res.status(200).json({
+        success: true,
+        message: 'Payment already processed',
+        order: existingOrder,
+      });
     }
 
     // Mark attempt paid
@@ -179,6 +220,7 @@ export const verifyPayment = async (req, res) => {
       payment: 'Razorpay',
       products: attempt.products || [],
       total: attempt.amount / 100,
+      status: 'Processing',
       // attach razorpay fields
       razorpay: {
         order_id: rOrderId,
@@ -187,8 +229,9 @@ export const verifyPayment = async (req, res) => {
       },
     });
 
-    // Send emails after order is saved — failure does NOT cancel the order
+    // Send emails and WhatsApp alerts after order is saved — failures do NOT cancel the order
     void sendOrderEmails(newOrder.toObject());
+    void sendWhatsAppNotification(newOrder.toObject(), 'normal');
 
     res.status(200).json({ success: true, message: 'Payment verified and order created', order: newOrder });
   } catch (error) {

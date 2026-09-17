@@ -68,6 +68,6 @@ const userSchema = new mongoose.Schema(
 
 // Model banao - Model = Schema ka actual usable version
 // 'User' = MongoDB collection ka naam (users ho jaata hai automatically)
-const User = mongoose.model('User', userSchema);
+const User = mongoose.models.User || mongoose.model('User', userSchema);
 
 export default User;

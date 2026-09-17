@@ -171,7 +171,10 @@ export default function Authentication() {
           navigate('/');
         }, 1500);
       } else {
-        setError(data.message || 'Something went wrong. Please try again.');
+        const errorMessage = data.errors && Array.isArray(data.errors) && data.errors.length > 0
+          ? data.errors.map((e) => e.msg).join(', ')
+          : (data.message || 'Something went wrong. Please try again.');
+        setError(errorMessage);
       }
     } catch (err) {
       console.error('Auth Error:', err);

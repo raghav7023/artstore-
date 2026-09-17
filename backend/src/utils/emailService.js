@@ -82,8 +82,12 @@ export const sendOwnerOrderEmail = async (order) => {
     const subtotal = calculateSubtotal(products);
     const grandTotal = Number(order.total) || subtotal;
     const deliveryCharge = Math.max(0, grandTotal - subtotal);
-    const paymentMethod = order.payment || 'N/A';
-    const paymentStatus = order.payment === 'Razorpay' ? 'Paid (Razorpay)' : 'Pending (Cash on Delivery)';
+    const paymentMethod = order.payment || 'Razorpay';
+    const paymentStatus = order.payment === 'Razorpay' ? 'Paid (Razorpay)' : 'Pending';
+    const orderStatus = order.status || 'Processing';
+    const orderDate = order.createdAt
+      ? new Date(order.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+      : new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
 
     const mailOptions = {
       from: `"Art Store" <${EMAIL_USER}>`,
@@ -98,6 +102,8 @@ You have received a new order on Art Store.
 ORDER DETAILS
 ----------------------------------------------
 Order ID       : #${orderId}
+Order Date     : ${orderDate}
+Order Status   : ${orderStatus}
 Payment Method : ${paymentMethod}
 Payment Status : ${paymentStatus}
 
@@ -124,6 +130,44 @@ Delivery Charge : Rs.${deliveryCharge}
 Grand Total     : Rs.${grandTotal}
 ----------------------------------------------
       `.trim(),
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2d2420; line-height: 1.5;">
+          <h2 style="color: #2f5bd3; border-bottom: 2px solid #2f5bd3; padding-bottom: 8px;">🛍️ New Order Received</h2>
+          <p><strong>Order ID:</strong> #${orderId}</p>
+          <p><strong>Order Date:</strong> ${orderDate}</p>
+          <p><strong>Order Status:</strong> <span style="color: #10b981; font-weight: bold;">${orderStatus}</span></p>
+          <p><strong>Payment Status:</strong> ${paymentStatus} (${paymentMethod})</p>
+          <hr style="border: none; border-top: 1px solid #e8e0d8; margin: 16px 0;" />
+          <h3 style="color: #2f5bd3;">Customer Details</h3>
+          <p><strong>Name:</strong> ${customerName}<br />
+             <strong>Email:</strong> ${customerEmail}<br />
+             <strong>Phone:</strong> ${customerPhone}<br />
+             <strong>Address:</strong> ${deliveryAddress}</p>
+          <hr style="border: none; border-top: 1px solid #e8e0d8; margin: 16px 0;" />
+          <h3 style="color: #2f5bd3;">Ordered Items</h3>
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: #f5f0eb; text-align: left;">
+                <th style="padding: 8px; border: 1px solid #e8e0d8;">Item</th>
+                <th style="padding: 8px; border: 1px solid #e8e0d8;">Qty</th>
+                <th style="padding: 8px; border: 1px solid #e8e0d8;">Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${products.map(p => `
+                <tr>
+                  <td style="padding: 8px; border: 1px solid #e8e0d8;">${p.name || 'Product'}</td>
+                  <td style="padding: 8px; border: 1px solid #e8e0d8;">${p.quantity}</td>
+                  <td style="padding: 8px; border: 1px solid #e8e0d8;">₹${p.price}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <p style="margin-top: 16px; text-align: right; font-size: 1.1rem;">
+            <strong>Grand Total: ₹${grandTotal}</strong> (Subtotal: ₹${subtotal}, Delivery: ₹${deliveryCharge})
+          </p>
+        </div>
+      `,
     };
 
     await transporter.sendMail(mailOptions);
@@ -157,8 +201,12 @@ export const sendCustomerOrderEmail = async (order) => {
     const subtotal = calculateSubtotal(products);
     const grandTotal = Number(order.total) || subtotal;
     const deliveryCharge = Math.max(0, grandTotal - subtotal);
-    const paymentMethod = order.payment || 'N/A';
-    const paymentStatus = order.payment === 'Razorpay' ? 'Paid (Razorpay)' : 'Pending (Cash on Delivery)';
+    const paymentMethod = order.payment || 'Razorpay';
+    const paymentStatus = order.payment === 'Razorpay' ? 'Paid (Razorpay)' : 'Pending';
+    const orderStatus = order.status || 'Processing';
+    const orderDate = order.createdAt
+      ? new Date(order.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+      : new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
 
     const mailOptions = {
       from: `"Art Store" <${EMAIL_USER}>`,
@@ -174,6 +222,8 @@ Your order has been placed successfully and is currently being processed with lo
 ORDER DETAILS
 ----------------------------------------------
 Order ID       : #${orderId}
+Order Date     : ${orderDate}
+Order Status   : ${orderStatus}
 Payment Method : ${paymentMethod}
 Payment Status : ${paymentStatus}
 
@@ -201,6 +251,48 @@ If you have any questions, feel free to reply to this email.
 Warm regards,
 Art Store
       `.trim(),
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2d2420; line-height: 1.5;">
+          <h2 style="color: #2f5bd3; border-bottom: 2px solid #2f5bd3; padding-bottom: 8px;">✨ Order Confirmed!</h2>
+          <p>Dear <strong>${customerName}</strong>,</p>
+          <p>Thank you for supporting our craft! Your order has been placed successfully and is being prepared with care.</p>
+          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 16px 0;">
+            <p style="margin: 4px 0;"><strong>Order ID:</strong> #${orderId}</p>
+            <p style="margin: 4px 0;"><strong>Order Date:</strong> ${orderDate}</p>
+            <p style="margin: 4px 0;"><strong>Order Status:</strong> <span style="color: #10b981; font-weight: bold;">${orderStatus}</span></p>
+            <p style="margin: 4px 0;"><strong>Payment Status:</strong> ${paymentStatus}</p>
+          </div>
+          <h3 style="color: #2f5bd3;">Items Ordered</h3>
+          <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+              <tr style="background: #f5f0eb; text-align: left;">
+                <th style="padding: 8px; border: 1px solid #e8e0d8;">Item</th>
+                <th style="padding: 8px; border: 1px solid #e8e0d8;">Qty</th>
+                <th style="padding: 8px; border: 1px solid #e8e0d8;">Price</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${products.map(p => `
+                <tr>
+                  <td style="padding: 8px; border: 1px solid #e8e0d8;">${p.name || 'Product'}</td>
+                  <td style="padding: 8px; border: 1px solid #e8e0d8;">${p.quantity}</td>
+                  <td style="padding: 8px; border: 1px solid #e8e0d8;">₹${p.price}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <p style="margin-top: 16px; text-align: right; font-size: 1.1rem;">
+            <strong>Grand Total: ₹${grandTotal}</strong> (Delivery: ₹${deliveryCharge})
+          </p>
+          <h3 style="color: #2f5bd3;">Delivery Address</h3>
+          <p style="background: #f9f9f9; padding: 12px; border-radius: 6px;">${deliveryAddress}</p>
+          <p style="color: #64748b; font-size: 0.9rem; margin-top: 24px;">
+            If you have any questions, feel free to reply directly to this email.<br />
+            Warm regards,<br />
+            <strong>Art Store Team 🧶</strong>
+          </p>
+        </div>
+      `,
     };
 
     await transporter.sendMail(mailOptions);

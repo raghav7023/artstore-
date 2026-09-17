@@ -5,9 +5,14 @@
 // Isse hum server ke kisi bhi file mein import kar sakte hain
 
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-// dotenv.config() .env file ko read karta hai aur
-// process.env mein saari values set karta hai
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load .env from backend directory directly, with fallback to current working directory
+dotenv.config({ path: path.join(__dirname, '.env') });
 dotenv.config();
 
 // Ab .env se values nikalo aur export karo

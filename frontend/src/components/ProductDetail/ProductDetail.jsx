@@ -20,6 +20,14 @@ export default function ProductDetail() {
     subcategory: product?.subcategory || 'All',
   };
 
+  const handleBackToProducts = () => {
+    if (window.history.state && typeof window.history.state.idx === 'number' && window.history.state.idx > 0) {
+      navigate(-1);
+    } else {
+      navigate('/products', { replace: true, state: returnFilter });
+    }
+  };
+
   const addToCart = () => {
     const cart = JSON.parse(localStorage.getItem('cart')) || [];
     const existingProduct = cart.find((item) => item.id === product.id);
@@ -39,7 +47,7 @@ export default function ProductDetail() {
     <div className="product-detail-page">
       <Navbar />
       <main className="product-detail-content">
-        <button className="detail-back-link" onClick={() => navigate('/products', { state: returnFilter })}>
+        <button type="button" className="detail-back-link" onClick={handleBackToProducts}>
           ← Back to Products
         </button>
 
@@ -83,8 +91,8 @@ export default function ProductDetail() {
                 <p className="product-detail-meta"><strong>Type:</strong> {formatDisplayName(product.subcategory)}</p>
               )}
               <div className="product-detail-actions">
-                <button className="product-detail-cart-btn" onClick={addToCart}>Add to Cart</button>
-                <button className="product-detail-products-btn" onClick={() => navigate('/products', { state: returnFilter })}>Back to Products</button>
+                <button type="button" className="product-detail-cart-btn" onClick={addToCart}>Add to Cart</button>
+                <button type="button" className="product-detail-products-btn" onClick={handleBackToProducts}>Back to Products</button>
               </div>
             </div>
           </section>

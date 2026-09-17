@@ -1,24 +1,41 @@
 import { useState, useEffect } from 'react';
 import Navbar from '../Navbar/Navbar';
 import './Checkout.css';
-import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { getDeliveryCharge } from '../../config/delivery.js';
+import razorpayQrImg from '../../assets/razorpay-qr.jpg';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:2026').replace(/\/+$/, '');
 
-export default function Checkout() {
-    const cartItems = JSON.parse(localStorage.getItem('cart')) || [];
+const getCartFromStorage = () => {
+    try {
+        const parsed = JSON.parse(localStorage.getItem('cart'));
+        return Array.isArray(parsed) ? parsed : [];
+    } catch {
+        return [];
+    }
+};
 
-    const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+export default function Checkout() {
+    const cartItems = getCartFromStorage();
+
+    const subtotal = cartItems.reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1), 0);
     const delivery = getDeliveryCharge(cartItems);
     const total = subtotal + delivery;
 
+    const savedUser = (() => {
+        try {
+            return JSON.parse(localStorage.getItem('artstore_user')) || {};
+        } catch {
+            return {};
+        }
+    })();
+
     const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        phone: '',
+        name: savedUser.name || '',
+        email: savedUser.email || '',
+        phone: savedUser.phone || '',
         address: '',
         city: '',
         pincode: '',
@@ -44,6 +61,10 @@ export default function Checkout() {
 
     const loadRazorpayScript = () => {
         return new Promise((resolve) => {
+            if (window.Razorpay) {
+                resolve(true);
+                return;
+            }
             const script = document.createElement('script');
             script.src = 'https://checkout.razorpay.com/v1/checkout.js';
             script.onload = () => resolve(true);
@@ -55,8 +76,40 @@ export default function Checkout() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!formData.name || !formData.email || !formData.phone || !formData.address) {
-            toast.error('Please fill required fields');
+        if (!cartItems.length) {
+            toast.error('Your cart is empty. Please add items before checking out.');
+            return;
+        }
+
+        const trimmedName = formData.name.trim();
+        const trimmedEmail = formData.email.trim();
+        const trimmedPhone = formData.phone.trim();
+        const trimmedAddress = formData.address.trim();
+        const trimmedCity = formData.city.trim();
+        const trimmedPincode = formData.pincode.trim();
+
+        if (!trimmedName || trimmedName.length < 2) {
+            toast.error('Please enter a valid full name (at least 2 characters)');
+            return;
+        }
+        if (!trimmedEmail || !/^\S+@\S+\.\S+$/.test(trimmedEmail)) {
+            toast.error('Please enter a valid email address');
+            return;
+        }
+        if (!trimmedPhone || !/^(?:\+91[\s-]?)?[6-9]\d{9}$/.test(trimmedPhone)) {
+            toast.error('Please enter a valid 10-digit Indian mobile number');
+            return;
+        }
+        if (!trimmedAddress) {
+            toast.error('Please enter your complete delivery address');
+            return;
+        }
+        if (!trimmedCity) {
+            toast.error('Please enter your city');
+            return;
+        }
+        if (!trimmedPincode || !/^\d{6}$/.test(trimmedPincode)) {
+            toast.error('Please enter a valid 6-digit pincode');
             return;
         }
 
@@ -71,13 +124,24 @@ export default function Checkout() {
                 return;
             }
 
+            const sanitizedPayload = {
+                name: trimmedName,
+                email: trimmedEmail,
+                phone: trimmedPhone,
+                address: trimmedAddress,
+                city: trimmedCity,
+                pincode: trimmedPincode,
+                products: cartItems,
+                payment: 'Razorpay',
+            };
+
             const resp = await fetch(`${API_BASE_URL}/api/payments/create-order`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ ...formData, products: cartItems, payment: formData.payment }),
+                body: JSON.stringify(sanitizedPayload),
             });
 
             const data = await resp.json();
@@ -106,9 +170,9 @@ export default function Checkout() {
                 description: 'Payment for order',
                 order_id: order.id,
                 prefill: {
-                    name: formData.name,
-                    email: formData.email,
-                    contact: formData.phone,
+                    name: trimmedName,
+                    email: trimmedEmail,
+                    contact: trimmedPhone,
                 },
                 theme: {
                     color: '#2f5bd3',
@@ -137,8 +201,9 @@ export default function Checkout() {
                             return;
                         }
                         if (verifyData.success) {
+                            // Cart is cleared strictly upon verified backend confirmation
                             localStorage.removeItem('cart');
-                            navigate('/payment-success', { replace: true });
+                            navigate('/payment-success', { replace: true, state: { order: verifyData.order } });
                         } else {
                             navigate('/payment-failure', { replace: true });
                         }
@@ -173,6 +238,26 @@ export default function Checkout() {
         }
     };
 
+    if (!cartItems.length) {
+        return (
+            <div className="checkout-page">
+                <Navbar />
+                <div className="checkout-container" style={{ display: 'flex', justifyContent: 'center', minHeight: '50vh', alignItems: 'center' }}>
+                    <div style={{ textAlign: 'center', background: '#fff', padding: '50px 30px', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.06)', maxWidth: '500px', width: '100%' }}>
+                        <div style={{ fontSize: '3.5rem', marginBottom: '16px' }}>🛒</div>
+                        <h2 style={{ color: 'var(--text)', marginBottom: '10px' }}>Your Cart is Empty</h2>
+                        <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>
+                            You need to add items to your cart before proceeding to checkout.
+                        </p>
+                        <Link to="/products" className="place-order-btn" style={{ display: 'inline-block', textDecoration: 'none' }}>
+                            🛍️ Explore Products
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="checkout-page">
             <Navbar />
@@ -192,12 +277,12 @@ export default function Checkout() {
 
                         <div className="form-group">
                             <label>Phone Number</label>
-                            <input type="tel" name="phone" placeholder="Enter your phone number" value={formData.phone} onChange={handleChange} required />
+                            <input type="tel" name="phone" placeholder="e.g. 9876543210" value={formData.phone} onChange={handleChange} required />
                         </div>
 
                         <div className="form-group full-width">
                             <label>Delivery Address</label>
-                            <textarea name="address" rows="4" placeholder="Enter your complete address" value={formData.address} onChange={handleChange} required />
+                            <textarea name="address" rows="3" placeholder="Enter your complete street address" value={formData.address} onChange={handleChange} required />
                         </div>
 
                         <div className="form-group">
@@ -207,7 +292,7 @@ export default function Checkout() {
 
                         <div className="form-group">
                             <label>Pincode</label>
-                            <input type="text" name="pincode" placeholder="Enter pincode" value={formData.pincode} onChange={handleChange} required />
+                            <input type="text" name="pincode" placeholder="6-digit pincode" maxLength={6} value={formData.pincode} onChange={handleChange} required />
                         </div>
 
                         <div className="form-group full-width">
@@ -220,6 +305,51 @@ export default function Checkout() {
                         <button type="submit" className="place-order-btn" disabled={isProcessing}>
                             {isProcessing ? 'Processing…' : '💳 Pay with Razorpay'}
                         </button>
+
+                        {/* Alternative UPI QR Scan Option */}
+                        <div className="upi-payment-option full-width">
+                            <div className="payment-divider">
+                                <span>OR</span>
+                            </div>
+
+                            <div className="upi-qr-card">
+                                <div className="upi-qr-header">
+                                    <h3>Scan & Pay via UPI</h3>
+                                    <p className="upi-qr-subtitle">
+                                        Scan using Google Pay, PhonePe, Paytm, BHIM or any UPI app
+                                    </p>
+                                </div>
+
+                                <div className="upi-qr-image-wrapper">
+                                    <img
+                                        src={razorpayQrImg}
+                                        alt="Scan & Pay via UPI - Razorpay QR Code"
+                                        className="upi-qr-image"
+                                    />
+                                </div>
+
+                                <div className="upi-qr-info">
+                                    <div className="upi-amount-badge">
+                                        Amount to Pay: <strong>₹{total}</strong>
+                                    </div>
+                                    <div className="upi-instructions">
+                                        <p>
+                                            <strong>📌 How it works:</strong>
+                                        </p>
+                                        <ol>
+                                            <li>Open your preferred UPI app (GPay, PhonePe, Paytm, etc.).</li>
+                                            <li>Scan the Razorpay QR code and transfer <strong>₹{total}</strong>.</li>
+                                        </ol>
+                                        <div className="upi-verification-note">
+                                            <p>
+                                                💡 <em>Recommended:</em> For <strong>instant automated confirmation</strong>, click <strong>Pay with Razorpay</strong> above (UPI apps are supported inside the popup with immediate order processing). Direct offline QR scans are manually verified before dispatch.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </form>
                 </div>
 

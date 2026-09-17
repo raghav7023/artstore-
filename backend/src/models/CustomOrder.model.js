@@ -61,4 +61,4 @@ const customOrderSchema = new mongoose.Schema(
   }
 );
 
-export default mongoose.model('CustomOrder', customOrderSchema);
+export default mongoose.models.CustomOrder || mongoose.model('CustomOrder', customOrderSchema);

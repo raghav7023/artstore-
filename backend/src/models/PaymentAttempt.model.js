@@ -36,4 +36,4 @@ const paymentAttemptSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.model("PaymentAttempt", paymentAttemptSchema);
+export default mongoose.models.PaymentAttempt || mongoose.model("PaymentAttempt", paymentAttemptSchema);
