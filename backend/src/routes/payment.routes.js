@@ -1,8 +1,11 @@
 import express from 'express';
 import { protect } from '../middleware/auth.middleware.js';
-import { createPaymentOrder, verifyPayment } from '../controllers/payment.controller.js';
+import { createPaymentOrder, verifyPayment, checkEmailHealth } from '../controllers/payment.controller.js';
 
 const router = express.Router();
+
+// Email SMTP diagnostic check
+router.get('/email-health', checkEmailHealth);
 
 // Create Razorpay order (protected)
 router.post('/create-order', protect, createPaymentOrder);

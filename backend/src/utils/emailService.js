@@ -16,25 +16,34 @@
 
 import nodemailer from 'nodemailer';
 import { EMAIL_USER, EMAIL_PASSWORD, ORDER_NOTIFICATION_EMAIL } from '../../Config.mjs';
+import Order from '../models/Order.model.js';
 
 // Cache to prevent duplicate emails for the same order
 const processedOrders = new Set();
+let cachedTransporter = null;
 
-// Helper to create Nodemailer transporter
-const createTransporter = () => {
+// Helper to create Nodemailer transporter with connection pooling and timeouts
+export const createTransporter = () => {
   if (!EMAIL_USER || !EMAIL_PASSWORD) {
     return null;
   }
 
-  return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // TLS / STARTTLS
+  if (cachedTransporter) {
+    return cachedTransporter;
+  }
+
+  cachedTransporter = nodemailer.createTransport({
+    service: 'gmail',
     auth: {
       user: EMAIL_USER.trim(),
       pass: EMAIL_PASSWORD.trim().replace(/\s+/g, ''),
     },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
   });
+
+  return cachedTransporter;
 };
 
 // Helper: Calculate subtotal from products
@@ -63,14 +72,14 @@ export const sendOwnerOrderEmail = async (order) => {
   try {
     const transporter = createTransporter();
     if (!transporter) {
-      console.warn('Email skipped: EMAIL_USER or EMAIL_PASSWORD not configured.');
-      return;
+      console.warn('⚠️ [Email] Owner email skipped: EMAIL_USER or EMAIL_PASSWORD not configured.');
+      return { success: false, reason: 'unconfigured' };
     }
 
     const ownerEmail = ORDER_NOTIFICATION_EMAIL || EMAIL_USER;
     if (!ownerEmail) {
-      console.warn('Store owner email not specified. Skipping owner notification.');
-      return;
+      console.warn('⚠️ [Email] Store owner email not specified. Skipping owner notification.');
+      return { success: false, reason: 'missing_owner_email' };
     }
 
     const orderId = order._id ? order._id.toString() : 'N/A';
@@ -170,10 +179,12 @@ Grand Total     : Rs.${grandTotal}
       `,
     };
 
-    await transporter.sendMail(mailOptions);
-    console.log(`Store owner notification sent for Order #${orderId} to ${ownerEmail}`);
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`✅ [Email] Store owner notification sent for Order #${orderId} to ${ownerEmail} (MsgId: ${info.messageId})`);
+    return { success: true, messageId: info.messageId, to: ownerEmail };
   } catch (error) {
-    console.error(`Failed to send store owner email for Order #${order?._id || 'unknown'}:`, error.message);
+    console.error(`❌ [Email] Failed to send store owner email for Order #${order?._id || 'unknown'}:`, error.message);
+    return { success: false, error: error.message };
   }
 };
 
@@ -184,14 +195,14 @@ export const sendCustomerOrderEmail = async (order) => {
   try {
     const transporter = createTransporter();
     if (!transporter) {
-      console.warn('Email skipped: EMAIL_USER or EMAIL_PASSWORD not configured.');
-      return;
+      console.warn('⚠️ [Email] Customer email skipped: EMAIL_USER or EMAIL_PASSWORD not configured.');
+      return { success: false, reason: 'unconfigured' };
     }
 
     const customerEmail = order.email;
-    if (!customerEmail) {
-      console.warn(`Customer email missing for Order #${order?._id || 'unknown'}. Skipping customer email.`);
-      return;
+    if (!customerEmail || !/^\S+@\S+\.\S+$/.test(customerEmail)) {
+      console.warn(`⚠️ [Email] Customer email invalid/missing for Order #${order?._id || 'unknown'}. Skipping customer email.`);
+      return { success: false, reason: 'invalid_email' };
     }
 
     const orderId = order._id ? order._id.toString() : 'N/A';
@@ -295,10 +306,12 @@ Art Store
       `,
     };
 
-    await transporter.sendMail(mailOptions);
-    console.log(`Customer confirmation email sent for Order #${orderId} to ${customerEmail}`);
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`✅ [Email] Customer confirmation email sent for Order #${orderId} to ${customerEmail} (MsgId: ${info.messageId})`);
+    return { success: true, messageId: info.messageId, to: customerEmail };
   } catch (error) {
-    console.error(`Failed to send customer confirmation email for Order #${order?._id || 'unknown'}:`, error.message);
+    console.error(`❌ [Email] Failed to send customer confirmation email for Order #${order?._id || 'unknown'}:`, error.message);
+    return { success: false, error: error.message };
   }
 };
 
@@ -306,26 +319,53 @@ Art Store
 // 3. COMBINED HELPER: sendOrderEmails(order)
 // ============================================================
 export const sendOrderEmails = async (order) => {
-  if (!order) return;
+  if (!order) return { success: false, reason: 'no_order' };
 
   const orderId = order._id ? order._id.toString() : null;
 
   // Prevent duplicate sends for the same order
   if (orderId) {
     if (processedOrders.has(orderId)) {
-      console.log(`Order #${orderId} emails already processed. Skipping duplicate.`);
-      return;
+      console.log(`ℹ️ [Email] Order #${orderId} emails already processed. Skipping duplicate.`);
+      return { success: true, skipped: true, reason: 'already_processed' };
     }
-    processedOrders.add(orderId);
-    const timer = setTimeout(() => processedOrders.delete(orderId), 3600000);
-    if (timer.unref) timer.unref();
   }
 
-  // Send both emails in parallel, neither can throw to the caller
-  await Promise.allSettled([
+  // Send both emails in parallel
+  const [ownerRes, customerRes] = await Promise.allSettled([
     sendOwnerOrderEmail(order),
     sendCustomerOrderEmail(order),
   ]);
+
+  const ownerResult = ownerRes.status === 'fulfilled' ? ownerRes.value : { success: false, error: ownerRes.reason?.message };
+  const customerResult = customerRes.status === 'fulfilled' ? customerRes.value : { success: false, error: customerRes.reason?.message };
+
+  if (orderId && (ownerResult?.success || customerResult?.success)) {
+    processedOrders.add(orderId);
+    const timer = setTimeout(() => processedOrders.delete(orderId), 3600000);
+    if (timer.unref) timer.unref();
+
+    // Persist email delivery status in Order document
+    try {
+      await Order.updateOne(
+        { _id: order._id },
+        {
+          $set: {
+            'emailsSent.owner': Boolean(ownerResult?.success),
+            'emailsSent.customer': Boolean(customerResult?.success),
+            'emailsSent.sentAt': new Date(),
+          },
+        }
+      );
+    } catch (dbErr) {
+      console.warn('⚠️ [Email] Could not update emailsSent in Order document:', dbErr.message);
+    }
+  }
+
+  return {
+    owner: ownerResult,
+    customer: customerResult,
+  };
 };
 
 // ============================================================

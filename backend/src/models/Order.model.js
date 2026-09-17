@@ -77,6 +77,12 @@ const orderSchema = new mongoose.Schema(
             payment_id: String,
             signature: String,
         },
+        // Track email dispatch status
+        emailsSent: {
+            customer: { type: Boolean, default: false },
+            owner: { type: Boolean, default: false },
+            sentAt: Date,
+        },
     },
     {
         timestamps: true,

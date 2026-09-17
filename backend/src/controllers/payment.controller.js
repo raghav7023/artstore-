@@ -5,7 +5,7 @@ import Order from '../models/Order.model.js';
 import { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET } from '../../Config.mjs';
 import { getDeliveryCharge } from '../config/delivery.config.js';
 import { products as catalogProducts } from '../data/products.data.js';
-import { sendOrderEmails } from '../utils/emailService.js';
+import { sendOrderEmails, verifyEmailConfiguration } from '../utils/emailService.js';
 import { sendWhatsAppNotification } from './order.controller.js';
 
 // Lazily initialize Razorpay only if credentials are provided
@@ -230,12 +230,32 @@ export const verifyPayment = async (req, res) => {
     });
 
     // Send emails and WhatsApp alerts after order is saved — failures do NOT cancel the order
-    void sendOrderEmails(newOrder.toObject());
-    void sendWhatsAppNotification(newOrder.toObject(), 'normal');
+    try {
+      const emailResult = await sendOrderEmails(newOrder.toObject());
+      console.log('Order notification email dispatch completed:', emailResult);
+    } catch (emailErr) {
+      console.error('Non-critical email dispatch failure:', emailErr?.message || emailErr);
+    }
+
+    try {
+      await sendWhatsAppNotification(newOrder.toObject(), 'normal');
+    } catch (waErr) {
+      console.error('Non-critical WhatsApp dispatch failure:', waErr?.message || waErr);
+    }
 
     res.status(200).json({ success: true, message: 'Payment verified and order created', order: newOrder });
   } catch (error) {
     console.error('Verify Payment Error:', error);
     res.status(500).json({ success: false, message: 'Payment verification failed' });
+  }
+};
+
+// GET /api/payments/email-health
+export const checkEmailHealth = async (req, res) => {
+  try {
+    const result = await verifyEmailConfiguration();
+    return res.status(result.success ? 200 : 500).json(result);
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
   }
 };

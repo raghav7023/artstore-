@@ -67,8 +67,16 @@ export const createCustomOrder = async (req, res) => {
     });
 
     const orderData = customOrder.toObject ? customOrder.toObject() : customOrder;
-    void sendWhatsAppNotification(orderData);
-    void sendCustomOrderEmails(orderData);
+    try {
+      await sendCustomOrderEmails(orderData);
+    } catch (e) {
+      console.error('Non-critical custom order email error:', e.message);
+    }
+    try {
+      await sendWhatsAppNotification(orderData);
+    } catch (e) {
+      console.error('Non-critical custom order WhatsApp error:', e.message);
+    }
 
     res.status(201).json({
       success: true,
