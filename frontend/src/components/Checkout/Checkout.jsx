@@ -4,6 +4,7 @@ import './Checkout.css';
 import toast from 'react-hot-toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { getDeliveryCharge } from '../../config/delivery.js';
+import razorpayQrImg from '../../assets/razorpay-qr.jpg';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:2026').replace(/\/+$/, '');
 
@@ -304,6 +305,51 @@ export default function Checkout() {
                         <button type="submit" className="place-order-btn" disabled={isProcessing}>
                             {isProcessing ? 'Processing…' : '💳 Pay with Razorpay'}
                         </button>
+
+                        {/* Alternative UPI QR Scan Option */}
+                        <div className="upi-payment-option full-width">
+                            <div className="payment-divider">
+                                <span>OR</span>
+                            </div>
+
+                            <div className="upi-qr-card">
+                                <div className="upi-qr-header">
+                                    <h3>Scan & Pay via UPI</h3>
+                                    <p className="upi-qr-subtitle">
+                                        Scan using Google Pay, PhonePe, Paytm, BHIM or any UPI app
+                                    </p>
+                                </div>
+
+                                <div className="upi-qr-image-wrapper">
+                                    <img
+                                        src={razorpayQrImg}
+                                        alt="Scan & Pay via UPI - Razorpay QR Code"
+                                        className="upi-qr-image"
+                                    />
+                                </div>
+
+                                <div className="upi-qr-info">
+                                    <div className="upi-amount-badge">
+                                        Amount to Pay: <strong>₹{total}</strong>
+                                    </div>
+                                    <div className="upi-instructions">
+                                        <p>
+                                            <strong>📌 How it works:</strong>
+                                        </p>
+                                        <ol>
+                                            <li>Open your preferred UPI app (GPay, PhonePe, Paytm, etc.).</li>
+                                            <li>Scan the Razorpay QR code and transfer <strong>₹{total}</strong>.</li>
+                                        </ol>
+                                        <div className="upi-verification-note">
+                                            <p>
+                                                💡 <em>Recommended:</em> For <strong>instant automated confirmation</strong>, click <strong>Pay with Razorpay</strong> above (UPI apps are supported inside the popup with immediate order processing). Direct offline QR scans are manually verified before dispatch.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </form>
                 </div>
 
