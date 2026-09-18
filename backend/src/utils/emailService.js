@@ -30,27 +30,55 @@ if (dns.setDefaultResultOrder) {
   }
 }
 
+// Resolve Gmail SMTP to an explicit IPv4 address to completely bypass Nodemailer 10's
+// internal random IPv4/IPv6 selection, which causes ENETUNREACH on Render Linux containers.
+let cachedIpv4 = null;
+let ipv4ResolvedAt = 0;
+
+export const resolveGmailIpv4 = async () => {
+  const now = Date.now();
+  if (cachedIpv4 && now - ipv4ResolvedAt < 600000) {
+    return cachedIpv4;
+  }
+  try {
+    const res = await dns.promises.lookup('smtp.gmail.com', { family: 4 });
+    if (res && res.address) {
+      cachedIpv4 = res.address;
+      ipv4ResolvedAt = now;
+      return cachedIpv4;
+    }
+  } catch (err) {
+    console.warn('⚠️ [Email] IPv4 lookup for smtp.gmail.com failed, falling back:', err.message);
+  }
+  return cachedIpv4 || 'smtp.gmail.com';
+};
+
 // Cache to prevent duplicate emails for the same order
 const processedOrders = new Set();
 const cachedTransporters = {};
 
-// Helper to create Nodemailer transporter with connection pooling, IPv4 enforcement and timeouts
-export const createTransporter = (port = 465) => {
+// Helper to create Nodemailer transporter with connection pooling, direct IPv4 host and timeouts
+export const createTransporter = (port = 465, hostIp = null) => {
   if (!EMAIL_USER || !EMAIL_PASSWORD) {
     return null;
   }
 
   const selectedPort = Number(port) === 587 ? 587 : 465;
-  if (cachedTransporters[selectedPort]) {
-    return cachedTransporters[selectedPort];
+  const targetHost = hostIp || cachedIpv4 || 'smtp.gmail.com';
+  const cacheKey = `${selectedPort}_${targetHost}`;
+
+  if (cachedTransporters[cacheKey]) {
+    return cachedTransporters[cacheKey];
   }
 
-  cachedTransporters[selectedPort] = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
+  cachedTransporters[cacheKey] = nodemailer.createTransport({
+    host: targetHost,
     port: selectedPort,
     secure: selectedPort === 465,
     requireTLS: selectedPort === 587,
-    family: 4, // Explicitly force IPv4 socket to prevent ENETUNREACH on Render/cloud containers
+    tls: {
+      servername: 'smtp.gmail.com',
+    },
     auth: {
       user: EMAIL_USER.trim(),
       pass: EMAIL_PASSWORD.trim().replace(/\s+/g, ''),
@@ -60,27 +88,29 @@ export const createTransporter = (port = 465) => {
     socketTimeout: 15000,
   });
 
-  return cachedTransporters[selectedPort];
+  return cachedTransporters[cacheKey];
 };
 
-// Resilient mail sender: attempts Port 465 (SSL, IPv4) first, automatically falls back to Port 587 (STARTTLS, IPv4)
+// Resilient mail sender: attempts Port 465 (SSL, direct IPv4) first, automatically falls back to Port 587 (STARTTLS, direct IPv4)
 export const sendMailWithFallback = async (mailOptions) => {
   if (!EMAIL_USER || !EMAIL_PASSWORD) {
     return { success: false, reason: 'unconfigured' };
   }
 
-  // Attempt 1: Port 465 (SSL, IPv4)
+  const hostIp = await resolveGmailIpv4();
+
+  // Attempt 1: Port 465 (SSL, direct IPv4)
   try {
-    const transporter465 = createTransporter(465);
+    const transporter465 = createTransporter(465, hostIp);
     const info = await transporter465.sendMail(mailOptions);
-    return { success: true, messageId: info.messageId, port: 465 };
+    return { success: true, messageId: info.messageId, port: 465, ip: hostIp };
   } catch (err465) {
-    console.warn(`⚠️ [Email] Port 465 send failed (${err465.message}). Retrying via Port 587 (STARTTLS, IPv4)...`);
-    // Attempt 2: Port 587 (STARTTLS, IPv4)
+    console.warn(`⚠️ [Email] Port 465 send failed (${err465.message}). Retrying via Port 587 (STARTTLS, direct IPv4)...`);
+    // Attempt 2: Port 587 (STARTTLS, direct IPv4)
     try {
-      const transporter587 = createTransporter(587);
+      const transporter587 = createTransporter(587, hostIp);
       const info = await transporter587.sendMail(mailOptions);
-      return { success: true, messageId: info.messageId, port: 587, fallback: true };
+      return { success: true, messageId: info.messageId, port: 587, fallback: true, ip: hostIp };
     } catch (err587) {
       console.error(`❌ [Email] SMTP dispatch failed on both ports 465 and 587:`, err587.message);
       return { success: false, error: err587.message, code: err587.code };
@@ -600,19 +630,21 @@ export const verifyEmailConfiguration = async () => {
     return { success: false, message: 'EMAIL_USER or EMAIL_PASSWORD not configured in environment.' };
   }
 
+  const hostIp = await resolveGmailIpv4();
+
   try {
-    const transporter465 = createTransporter(465);
+    const transporter465 = createTransporter(465, hostIp);
     await transporter465.verify();
-    return { success: true, message: 'Gmail SMTP authentication succeeded (port 465 SSL, IPv4).' };
+    return { success: true, message: `Gmail SMTP authentication succeeded (port 465 SSL, IPv4: ${hostIp}).` };
   } catch (err465) {
     try {
-      const transporter587 = createTransporter(587);
+      const transporter587 = createTransporter(587, hostIp);
       await transporter587.verify();
-      return { success: true, message: 'Gmail SMTP authentication succeeded (port 587 STARTTLS, IPv4 fallback).' };
+      return { success: true, message: `Gmail SMTP authentication succeeded (port 587 STARTTLS, IPv4 fallback: ${hostIp}).` };
     } catch (err587) {
       return {
         success: false,
-        message: `SMTP verification failed on port 465 (${err465.message}) and port 587 (${err587.message})`,
+        message: `SMTP verification failed on port 465 (${err465.message}) and port 587 (${err587.message}) [Host: ${hostIp}]`,
         code: err587.code || err465.code,
       };
     }
