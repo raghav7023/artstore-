@@ -12,6 +12,16 @@ import rateLimit from 'express-rate-limit';
 import { MONGODB_URL, PORT } from './Config.mjs';
 import path from 'path';
 import fs from 'fs';
+import dns from 'dns';
+
+// Force Node.js DNS to prioritize IPv4 globally (critical for cloud hosts like Render)
+if (dns.setDefaultResultOrder) {
+  try {
+    dns.setDefaultResultOrder('ipv4first');
+  } catch {
+    // ignore
+  }
+}
 
 // Routes import karo
 import authRoutes from './src/routes/auth.routes.js';

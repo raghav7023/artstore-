@@ -15,25 +15,42 @@
 // ============================================================
 
 import nodemailer from 'nodemailer';
+import dns from 'dns';
 import { EMAIL_USER, EMAIL_PASSWORD, ORDER_NOTIFICATION_EMAIL } from '../../Config.mjs';
 import Order from '../models/Order.model.js';
 
+// Force Node.js DNS resolution to prioritize IPv4 globally.
+// Crucial for Render/cloud Linux containers where IPv6 routes are unavailable,
+// preventing 'ENETUNREACH' / 'ETIMEDOUT' connection failures to Gmail SMTP.
+if (dns.setDefaultResultOrder) {
+  try {
+    dns.setDefaultResultOrder('ipv4first');
+  } catch {
+    // ignore
+  }
+}
+
 // Cache to prevent duplicate emails for the same order
 const processedOrders = new Set();
-let cachedTransporter = null;
+const cachedTransporters = {};
 
-// Helper to create Nodemailer transporter with connection pooling and timeouts
-export const createTransporter = () => {
+// Helper to create Nodemailer transporter with connection pooling, IPv4 enforcement and timeouts
+export const createTransporter = (port = 465) => {
   if (!EMAIL_USER || !EMAIL_PASSWORD) {
     return null;
   }
 
-  if (cachedTransporter) {
-    return cachedTransporter;
+  const selectedPort = Number(port) === 587 ? 587 : 465;
+  if (cachedTransporters[selectedPort]) {
+    return cachedTransporters[selectedPort];
   }
 
-  cachedTransporter = nodemailer.createTransport({
-    service: 'gmail',
+  cachedTransporters[selectedPort] = nodemailer.createTransport({
+    host: 'smtp.gmail.com',
+    port: selectedPort,
+    secure: selectedPort === 465,
+    requireTLS: selectedPort === 587,
+    family: 4, // Explicitly force IPv4 socket to prevent ENETUNREACH on Render/cloud containers
     auth: {
       user: EMAIL_USER.trim(),
       pass: EMAIL_PASSWORD.trim().replace(/\s+/g, ''),
@@ -43,7 +60,32 @@ export const createTransporter = () => {
     socketTimeout: 15000,
   });
 
-  return cachedTransporter;
+  return cachedTransporters[selectedPort];
+};
+
+// Resilient mail sender: attempts Port 465 (SSL, IPv4) first, automatically falls back to Port 587 (STARTTLS, IPv4)
+export const sendMailWithFallback = async (mailOptions) => {
+  if (!EMAIL_USER || !EMAIL_PASSWORD) {
+    return { success: false, reason: 'unconfigured' };
+  }
+
+  // Attempt 1: Port 465 (SSL, IPv4)
+  try {
+    const transporter465 = createTransporter(465);
+    const info = await transporter465.sendMail(mailOptions);
+    return { success: true, messageId: info.messageId, port: 465 };
+  } catch (err465) {
+    console.warn(`⚠️ [Email] Port 465 send failed (${err465.message}). Retrying via Port 587 (STARTTLS, IPv4)...`);
+    // Attempt 2: Port 587 (STARTTLS, IPv4)
+    try {
+      const transporter587 = createTransporter(587);
+      const info = await transporter587.sendMail(mailOptions);
+      return { success: true, messageId: info.messageId, port: 587, fallback: true };
+    } catch (err587) {
+      console.error(`❌ [Email] SMTP dispatch failed on both ports 465 and 587:`, err587.message);
+      return { success: false, error: err587.message, code: err587.code };
+    }
+  }
 };
 
 // Helper: Calculate subtotal from products
@@ -70,12 +112,6 @@ const formatProductsText = (products = []) => {
 // ============================================================
 export const sendOwnerOrderEmail = async (order) => {
   try {
-    const transporter = createTransporter();
-    if (!transporter) {
-      console.warn('⚠️ [Email] Owner email skipped: EMAIL_USER or EMAIL_PASSWORD not configured.');
-      return { success: false, reason: 'unconfigured' };
-    }
-
     const ownerEmail = ORDER_NOTIFICATION_EMAIL || EMAIL_USER;
     if (!ownerEmail) {
       console.warn('⚠️ [Email] Store owner email not specified. Skipping owner notification.');
@@ -92,7 +128,7 @@ export const sendOwnerOrderEmail = async (order) => {
     const grandTotal = Number(order.total) || subtotal;
     const deliveryCharge = Math.max(0, grandTotal - subtotal);
     const paymentMethod = order.payment || 'Razorpay';
-    const paymentStatus = order.payment === 'Razorpay' ? 'Paid (Razorpay)' : 'Pending';
+    const paymentStatus = order.razorpay?.payment_id || (order.payment && order.payment.toLowerCase().includes('razorpay')) ? 'Paid (Razorpay)' : 'Pending';
     const orderStatus = order.status || 'Processing';
     const orderDate = order.createdAt
       ? new Date(order.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
@@ -179,9 +215,14 @@ Grand Total     : Rs.${grandTotal}
       `,
     };
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`✅ [Email] Store owner notification sent for Order #${orderId} to ${ownerEmail} (MsgId: ${info.messageId})`);
-    return { success: true, messageId: info.messageId, to: ownerEmail };
+    const dispatch = await sendMailWithFallback(mailOptions);
+    if (!dispatch.success) {
+      console.error(`❌ [Email] Failed to send store owner email for Order #${orderId}:`, dispatch.error || dispatch.reason);
+      return { success: false, error: dispatch.error || dispatch.reason };
+    }
+
+    console.log(`✅ [Email] Store owner notification sent for Order #${orderId} to ${ownerEmail} (MsgId: ${dispatch.messageId}, Port: ${dispatch.port})`);
+    return { success: true, messageId: dispatch.messageId, to: ownerEmail, port: dispatch.port };
   } catch (error) {
     console.error(`❌ [Email] Failed to send store owner email for Order #${order?._id || 'unknown'}:`, error.message);
     return { success: false, error: error.message };
@@ -193,12 +234,6 @@ Grand Total     : Rs.${grandTotal}
 // ============================================================
 export const sendCustomerOrderEmail = async (order) => {
   try {
-    const transporter = createTransporter();
-    if (!transporter) {
-      console.warn('⚠️ [Email] Customer email skipped: EMAIL_USER or EMAIL_PASSWORD not configured.');
-      return { success: false, reason: 'unconfigured' };
-    }
-
     const customerEmail = order.email;
     if (!customerEmail || !/^\S+@\S+\.\S+$/.test(customerEmail)) {
       console.warn(`⚠️ [Email] Customer email invalid/missing for Order #${order?._id || 'unknown'}. Skipping customer email.`);
@@ -213,7 +248,7 @@ export const sendCustomerOrderEmail = async (order) => {
     const grandTotal = Number(order.total) || subtotal;
     const deliveryCharge = Math.max(0, grandTotal - subtotal);
     const paymentMethod = order.payment || 'Razorpay';
-    const paymentStatus = order.payment === 'Razorpay' ? 'Paid (Razorpay)' : 'Pending';
+    const paymentStatus = order.razorpay?.payment_id || (order.payment && order.payment.toLowerCase().includes('razorpay')) ? 'Paid (Razorpay)' : 'Pending';
     const orderStatus = order.status || 'Processing';
     const orderDate = order.createdAt
       ? new Date(order.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
@@ -306,9 +341,14 @@ Art Store
       `,
     };
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`✅ [Email] Customer confirmation email sent for Order #${orderId} to ${customerEmail} (MsgId: ${info.messageId})`);
-    return { success: true, messageId: info.messageId, to: customerEmail };
+    const dispatch = await sendMailWithFallback(mailOptions);
+    if (!dispatch.success) {
+      console.error(`❌ [Email] Failed to send customer confirmation email for Order #${orderId}:`, dispatch.error || dispatch.reason);
+      return { success: false, error: dispatch.error || dispatch.reason };
+    }
+
+    console.log(`✅ [Email] Customer confirmation email sent for Order #${orderId} to ${customerEmail} (MsgId: ${dispatch.messageId}, Port: ${dispatch.port})`);
+    return { success: true, messageId: dispatch.messageId, to: customerEmail, port: dispatch.port };
   } catch (error) {
     console.error(`❌ [Email] Failed to send customer confirmation email for Order #${order?._id || 'unknown'}:`, error.message);
     return { success: false, error: error.message };
@@ -316,15 +356,15 @@ Art Store
 };
 
 // ============================================================
-// 3. COMBINED HELPER: sendOrderEmails(order)
+// 3. COMBINED HELPER: sendOrderEmails(order, options)
 // ============================================================
-export const sendOrderEmails = async (order) => {
+export const sendOrderEmails = async (order, options = {}) => {
   if (!order) return { success: false, reason: 'no_order' };
 
   const orderId = order._id ? order._id.toString() : null;
 
-  // Prevent duplicate sends for the same order
-  if (orderId) {
+  // Prevent duplicate sends for the same order unless force=true
+  if (orderId && !options.force) {
     if (processedOrders.has(orderId)) {
       console.log(`ℹ️ [Email] Order #${orderId} emails already processed. Skipping duplicate.`);
       return { success: true, skipped: true, reason: 'already_processed' };
@@ -448,11 +488,16 @@ ${imageInfo}
       `.trim(),
     };
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`Custom order owner email sent successfully for Order #${orderId} to ${ownerEmail}`);
-    return info;
+    const dispatch = await sendMailWithFallback(mailOptions);
+    if (dispatch.success) {
+      console.log(`Custom order owner email sent successfully for Order #${orderId} to ${ownerEmail} (MsgId: ${dispatch.messageId}, Port: ${dispatch.port})`);
+    } else {
+      console.error(`Custom order owner email failed: ${dispatch.error || dispatch.reason}`);
+    }
+    return dispatch;
   } catch (error) {
     console.error(`Custom order owner email failed: ${error.message}`);
+    return { success: false, error: error.message };
   }
 };
 
@@ -461,9 +506,6 @@ ${imageInfo}
 // ============================================================
 export const sendCustomOrderCustomerEmail = async (customOrder) => {
   try {
-    const transporter = createTransporter();
-    if (!transporter) return;
-
     const customerEmail = customOrder.email;
     if (!customerEmail) {
       console.warn(`Customer email missing for Custom Order #${customOrder?._id || 'unknown'}. Skipping customer email.`);
@@ -510,11 +552,16 @@ Art Store Team
       `.trim(),
     };
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log(`Custom order customer email sent successfully for Order #${orderId} to ${customerEmail}`);
-    return info;
+    const dispatch = await sendMailWithFallback(mailOptions);
+    if (dispatch.success) {
+      console.log(`Custom order customer email sent successfully for Order #${orderId} to ${customerEmail} (MsgId: ${dispatch.messageId}, Port: ${dispatch.port})`);
+    } else {
+      console.error(`Custom order customer email failed: ${dispatch.error || dispatch.reason}`);
+    }
+    return dispatch;
   } catch (error) {
     console.error(`Custom order customer email failed: ${error.message}`);
+    return { success: false, error: error.message };
   }
 };
 
@@ -549,15 +596,25 @@ export const sendCustomOrderEmails = async (customOrder) => {
 // 7. VERIFY EMAIL CONFIGURATION (SAFE - NEVER LOGS SECRETS)
 // ============================================================
 export const verifyEmailConfiguration = async () => {
-  const transporter = createTransporter();
-  if (!transporter) {
+  if (!EMAIL_USER || !EMAIL_PASSWORD) {
     return { success: false, message: 'EMAIL_USER or EMAIL_PASSWORD not configured in environment.' };
   }
 
   try {
-    await transporter.verify();
-    return { success: true, message: 'Gmail SMTP authentication succeeded.' };
-  } catch (error) {
-    return { success: false, message: error.message, code: error.code };
+    const transporter465 = createTransporter(465);
+    await transporter465.verify();
+    return { success: true, message: 'Gmail SMTP authentication succeeded (port 465 SSL, IPv4).' };
+  } catch (err465) {
+    try {
+      const transporter587 = createTransporter(587);
+      await transporter587.verify();
+      return { success: true, message: 'Gmail SMTP authentication succeeded (port 587 STARTTLS, IPv4 fallback).' };
+    } catch (err587) {
+      return {
+        success: false,
+        message: `SMTP verification failed on port 465 (${err465.message}) and port 587 (${err587.message})`,
+        code: err587.code || err465.code,
+      };
+    }
   }
 };

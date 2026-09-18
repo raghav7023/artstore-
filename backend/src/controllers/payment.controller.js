@@ -259,3 +259,119 @@ export const checkEmailHealth = async (req, res) => {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
+
+// POST /api/payments/resend-email/:orderId
+export const resendOrderEmail = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    // Security check: Only allow customer who placed the order or admin
+    if (req.user && order.user && req.user._id.toString() !== order.user.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Unauthorized to resend emails for this order' });
+    }
+
+    const emailResult = await sendOrderEmails(order.toObject(), { force: true });
+    return res.status(200).json({ success: true, message: 'Order emails dispatched', emailResult });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// POST /api/payments/webhook
+// Handles server-side automated payment events (payment.captured, order.paid)
+export const handleRazorpayWebhook = async (req, res) => {
+  try {
+    const signature = req.headers['x-razorpay-signature'];
+    if (!signature) {
+      return res.status(400).json({ success: false, message: 'Missing webhook signature' });
+    }
+
+    const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || RAZORPAY_KEY_SECRET;
+    const bodyStr = JSON.stringify(req.body);
+    const expectedSignature = crypto
+      .createHmac('sha256', webhookSecret)
+      .update(bodyStr)
+      .digest('hex');
+
+    const signatureBuffer = Buffer.from(signature, 'utf8');
+    const expectedBuffer = Buffer.from(expectedSignature, 'utf8');
+    const isSignatureValid =
+      signatureBuffer.length === expectedBuffer.length &&
+      crypto.timingSafeEqual(signatureBuffer, expectedBuffer);
+
+    if (!isSignatureValid) {
+      console.warn('⚠️ Webhook signature verification failed');
+      return res.status(400).json({ success: false, message: 'Invalid webhook signature' });
+    }
+
+    const event = req.body.event;
+    console.log(`ℹ️ [Razorpay Webhook] Received verified event: ${event}`);
+
+    if (event === 'payment.captured' || event === 'order.paid') {
+      const paymentEntity = req.body.payload?.payment?.entity;
+      const rOrderId = paymentEntity?.order_id || req.body.payload?.order?.entity?.id;
+      const rPaymentId = paymentEntity?.id;
+
+      if (rOrderId) {
+        // Enforce idempotency: if order already exists, do not duplicate
+        const existingOrder = await Order.findOne({ 'razorpay.order_id': rOrderId });
+        if (existingOrder) {
+          console.log(`ℹ️ [Webhook] Order already processed for Razorpay Order #${rOrderId}`);
+          return res.status(200).json({ success: true, message: 'Order already processed', orderId: existingOrder._id });
+        }
+
+        const attempt = await PaymentAttempt.findOne({ razorpay_order_id: rOrderId });
+        if (attempt) {
+          attempt.status = 'paid';
+          await attempt.save();
+
+          const paymentMethodDetail = paymentEntity?.method ? `Razorpay (${paymentEntity.method.toUpperCase()})` : 'Razorpay';
+
+          const newOrder = await Order.create({
+            user: attempt.user,
+            name: attempt.customer?.name || 'Customer',
+            email: attempt.customer?.email || 'N/A',
+            phone: attempt.customer?.phone || 'N/A',
+            address: attempt.customer?.address || 'N/A',
+            city: attempt.customer?.city || 'N/A',
+            pincode: attempt.customer?.pincode || 'N/A',
+            payment: paymentMethodDetail,
+            products: attempt.products || [],
+            total: attempt.amount / 100,
+            status: 'Processing',
+            razorpay: {
+              order_id: rOrderId,
+              payment_id: rPaymentId || 'webhook_captured',
+              signature: signature,
+            },
+          });
+
+          // Dispatch confirmation emails safely
+          try {
+            const emailResult = await sendOrderEmails(newOrder.toObject());
+            console.log('Webhook order confirmation email dispatch completed:', emailResult);
+          } catch (emailErr) {
+            console.error('Non-critical email dispatch failure in webhook:', emailErr?.message || emailErr);
+          }
+
+          try {
+            await sendWhatsAppNotification(newOrder.toObject(), 'normal');
+          } catch (waErr) {
+            console.error('Non-critical WhatsApp dispatch failure in webhook:', waErr?.message || waErr);
+          }
+
+          return res.status(200).json({ success: true, message: 'Payment verified and order created via webhook', orderId: newOrder._id });
+        }
+      }
+    }
+
+    return res.status(200).json({ success: true, message: 'Webhook event received' });
+  } catch (error) {
+    console.error('Webhook Handler Error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Webhook processing failed' });
+  }
+};

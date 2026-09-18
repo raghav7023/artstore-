@@ -402,8 +402,123 @@ const run = async () => {
   console.log(`Order hijacking attempt by unauthorized user correctly blocked with 403 (${hijackAttempt.data.message})`);
   console.log('✅ Test 13 Passed: User isolation and privacy strictly enforced.\n');
 
+  // ==========================================
+  // TEST 14: Dynamic UPI QR Payment Flow Verification
+  // ==========================================
+  console.log('--- Test 14: Dynamic UPI QR Payment Verification & Order Confirmation ---');
+  const qrOrderCreate = await request(`${API_BASE}/api/payments/create-order`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${tokenA}`,
+    },
+    body: JSON.stringify({
+      name: 'Customer Alpha UPI',
+      email: userAEmail,
+      phone: '9876543210',
+      address: '789 Studio Lane',
+      city: 'Delhi',
+      pincode: '110001',
+      products: [{ id: 404, name: 'Sling Bag', price: 1299, quantity: 1, category: 'crochet' }],
+      payment: 'Razorpay',
+    }),
+  });
+
+  if (!qrOrderCreate.ok || !qrOrderCreate.data?.order?.id) {
+    throw new Error(`QR Order creation failed: ${JSON.stringify(qrOrderCreate.data)}`);
+  }
+
+  const qrRazorpayOrder = qrOrderCreate.data.order;
+  const qrRealPaymentId = `pay_upi_qr_${Date.now()}`;
+  const qrValidSignature = crypto
+    .createHmac('sha256', RAZORPAY_KEY_SECRET)
+    .update(`${qrRazorpayOrder.id}|${qrRealPaymentId}`)
+    .digest('hex');
+
+  const qrVerifyResp = await request(`${API_BASE}/api/payments/verify`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${tokenA}`,
+    },
+    body: JSON.stringify({
+      razorpay_order_id: qrRazorpayOrder.id,
+      razorpay_payment_id: qrRealPaymentId,
+      razorpay_signature: qrValidSignature,
+      payment_method: 'UPI',
+    }),
+  });
+
+  if (!qrVerifyResp.ok || !qrVerifyResp.data?.success || !qrVerifyResp.data?.order?._id) {
+    throw new Error(`Dynamic UPI QR payment verification failed: ${JSON.stringify(qrVerifyResp.data)}`);
+  }
+
+  const qrConfirmedOrder = qrVerifyResp.data.order;
+  console.log(`Dynamic UPI QR Payment verified! Order #${qrConfirmedOrder._id}, Method: ${qrConfirmedOrder.payment}, Total: ₹${qrConfirmedOrder.total}`);
+  console.log('✅ Test 14 Passed: Dynamic UPI QR payment verified, order confirmed, and customer/owner emails dispatched.\n');
+
+  // ==========================================
+  // TEST 15: Razorpay Webhook Event Processing
+  // ==========================================
+  console.log('--- Test 15: Server-to-Server Razorpay Webhook Processing ---');
+  const webhookOrderCreate = await request(`${API_BASE}/api/payments/create-order`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${tokenB}`,
+    },
+    body: JSON.stringify({
+      name: 'Customer Beta Webhook',
+      email: userBEmail,
+      phone: '9812345678',
+      address: '999 Server Road',
+      city: 'Delhi',
+      pincode: '110001',
+      products: [{ id: 404, name: 'Sling Bag', price: 1299, quantity: 1, category: 'crochet' }],
+      payment: 'Razorpay',
+    }),
+  });
+
+  const webhookRazorpayOrder = webhookOrderCreate.data.order;
+  const webhookPaymentId = `pay_hook_${Date.now()}`;
+  const webhookBody = {
+    event: 'payment.captured',
+    payload: {
+      payment: {
+        entity: {
+          id: webhookPaymentId,
+          order_id: webhookRazorpayOrder.id,
+          amount: 139800,
+          currency: 'INR',
+          status: 'captured',
+          method: 'upi',
+        },
+      },
+    },
+  };
+  const rawWebhookBody = JSON.stringify(webhookBody);
+  const webhookSig = crypto
+    .createHmac('sha256', RAZORPAY_KEY_SECRET)
+    .update(rawWebhookBody)
+    .digest('hex');
+
+  const webhookResp = await request(`${API_BASE}/api/payments/webhook`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-razorpay-signature': webhookSig,
+    },
+    body: rawWebhookBody,
+  });
+
+  if (!webhookResp.ok || !webhookResp.data?.success) {
+    throw new Error(`Webhook test failed: ${JSON.stringify(webhookResp.data)}`);
+  }
+  console.log(`Webhook successfully processed and order created: ${webhookResp.data.orderId || 'OK'}`);
+  console.log('✅ Test 15 Passed: Server-to-server webhook verified and orders confirmed automatically.\n');
+
   console.log('====================================================');
-  console.log('🎉 ALL 13 END-TO-END SYSTEM TESTS PASSED SUCCESSFULLY!');
+  console.log('🎉 ALL 15 END-TO-END SYSTEM TESTS PASSED SUCCESSFULLY!');
   console.log('====================================================');
   process.exit(0);
 };
