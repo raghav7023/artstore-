@@ -16,7 +16,8 @@
 
 import nodemailer from 'nodemailer';
 import dns from 'dns';
-import { EMAIL_USER, EMAIL_PASSWORD, ORDER_NOTIFICATION_EMAIL } from '../../Config.mjs';
+import { Resend } from 'resend';
+import { EMAIL_USER, EMAIL_PASSWORD, ORDER_NOTIFICATION_EMAIL, RESEND_API_KEY, RESEND_FROM } from '../../Config.mjs';
 import Order from '../models/Order.model.js';
 
 // Force Node.js DNS resolution to prioritize IPv4 globally.
@@ -91,8 +92,39 @@ export const createTransporter = (port = 465, hostIp = null) => {
   return cachedTransporters[cacheKey];
 };
 
-// Resilient mail sender: attempts Port 465 (SSL, direct IPv4) first, automatically falls back to Port 587 (STARTTLS, direct IPv4)
+// Resilient mail sender:
+// 1. Attempts Resend HTTPS REST API (Port 443) if RESEND_API_KEY is configured (ideal for Render Free tier)
+// 2. Attempts Port 465 (SSL, direct IPv4) SMTP fallback
+// 3. Attempts Port 587 (STARTTLS, direct IPv4) SMTP fallback
 export const sendMailWithFallback = async (mailOptions) => {
+  // Priority 1: Resend HTTPS API (Port 443 — works everywhere, never blocked by Render Free tier)
+  if (RESEND_API_KEY) {
+    try {
+      const resend = new Resend(RESEND_API_KEY);
+      const fromAddress = RESEND_FROM || 'Art Store <onboarding@resend.dev>';
+      const toAddresses = Array.isArray(mailOptions.to) ? mailOptions.to : [mailOptions.to];
+
+      const { data, error } = await resend.emails.send({
+        from: fromAddress,
+        to: toAddresses,
+        subject: mailOptions.subject,
+        text: mailOptions.text,
+        html: mailOptions.html,
+      });
+
+      if (error) {
+        console.error('❌ [Resend API Error]:', error.message || error);
+        // Do not abort; fall through to SMTP fallback if credentials exist
+      } else {
+        console.log(`✅ [Email/Resend] Email dispatched successfully to ${toAddresses.join(', ')} (MsgId: ${data?.id})`);
+        return { success: true, messageId: data?.id, provider: 'resend' };
+      }
+    } catch (resendErr) {
+      console.error('❌ [Email/Resend] Network exception:', resendErr.message);
+    }
+  }
+
+  // Priority 2: SMTP Fallback
   if (!EMAIL_USER || !EMAIL_PASSWORD) {
     return { success: false, reason: 'unconfigured' };
   }
@@ -103,14 +135,14 @@ export const sendMailWithFallback = async (mailOptions) => {
   try {
     const transporter465 = createTransporter(465, hostIp);
     const info = await transporter465.sendMail(mailOptions);
-    return { success: true, messageId: info.messageId, port: 465, ip: hostIp };
+    return { success: true, messageId: info.messageId, port: 465, ip: hostIp, provider: 'smtp' };
   } catch (err465) {
     console.warn(`⚠️ [Email] Port 465 send failed (${err465.message}). Retrying via Port 587 (STARTTLS, direct IPv4)...`);
     // Attempt 2: Port 587 (STARTTLS, direct IPv4)
     try {
       const transporter587 = createTransporter(587, hostIp);
       const info = await transporter587.sendMail(mailOptions);
-      return { success: true, messageId: info.messageId, port: 587, fallback: true, ip: hostIp };
+      return { success: true, messageId: info.messageId, port: 587, fallback: true, ip: hostIp, provider: 'smtp' };
     } catch (err587) {
       console.error(`❌ [Email] SMTP dispatch failed on both ports 465 and 587:`, err587.message);
       return { success: false, error: err587.message, code: err587.code };
@@ -626,8 +658,42 @@ export const sendCustomOrderEmails = async (customOrder) => {
 // 7. VERIFY EMAIL CONFIGURATION (SAFE - NEVER LOGS SECRETS)
 // ============================================================
 export const verifyEmailConfiguration = async () => {
+  // Check Resend HTTPS API (Port 443) first if configured
+  if (RESEND_API_KEY) {
+    try {
+      const resend = new Resend(RESEND_API_KEY);
+      const { data, error } = await resend.apiKeys.list();
+      if (error) {
+        return {
+          success: false,
+          provider: 'resend',
+          transport: 'HTTPS (Port 443)',
+          message: `Resend API authentication failed: ${error.message || JSON.stringify(error)}`,
+          code: error.statusCode || 400,
+        };
+      }
+      return {
+        success: true,
+        provider: 'resend',
+        transport: 'HTTPS (Port 443)',
+        message: 'Resend API authenticated successfully over HTTPS (Port 443).',
+      };
+    } catch (resendErr) {
+      return {
+        success: false,
+        provider: 'resend',
+        transport: 'HTTPS (Port 443)',
+        message: `Resend API connection error: ${resendErr.message}`,
+      };
+    }
+  }
+
+  // Check SMTP Fallback
   if (!EMAIL_USER || !EMAIL_PASSWORD) {
-    return { success: false, message: 'EMAIL_USER or EMAIL_PASSWORD not configured in environment.' };
+    return {
+      success: false,
+      message: 'Neither RESEND_API_KEY nor EMAIL_USER/EMAIL_PASSWORD configured in environment.',
+    };
   }
 
   const hostIp = await resolveGmailIpv4();
@@ -635,15 +701,16 @@ export const verifyEmailConfiguration = async () => {
   try {
     const transporter465 = createTransporter(465, hostIp);
     await transporter465.verify();
-    return { success: true, message: `Gmail SMTP authentication succeeded (port 465 SSL, IPv4: ${hostIp}).` };
+    return { success: true, provider: 'smtp', message: `Gmail SMTP authentication succeeded (port 465 SSL, IPv4: ${hostIp}).` };
   } catch (err465) {
     try {
       const transporter587 = createTransporter(587, hostIp);
       await transporter587.verify();
-      return { success: true, message: `Gmail SMTP authentication succeeded (port 587 STARTTLS, IPv4 fallback: ${hostIp}).` };
+      return { success: true, provider: 'smtp', message: `Gmail SMTP authentication succeeded (port 587 STARTTLS, IPv4 fallback: ${hostIp}).` };
     } catch (err587) {
       return {
         success: false,
+        provider: 'smtp',
         message: `SMTP verification failed on port 465 (${err465.message}) and port 587 (${err587.message}) [Host: ${hostIp}]`,
         code: err587.code || err465.code,
       };

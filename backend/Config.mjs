@@ -28,10 +28,13 @@ const WHATSAPP_TO_NUMBER = process.env.WHATSAPP_TO_NUMBER;
 const WHATSAPP_API_VERSION = process.env.WHATSAPP_API_VERSION || 'v19.0';
 
 // ── Email config ──────────────────────────────────────────────
-// EMAIL_USER     : Gmail address that sends the emails
+// RESEND_API_KEY : HTTPS API key from https://resend.com (works on Render port 443)
+// RESEND_FROM    : From address (e.g. "Art Store <onboarding@resend.dev>")
+// EMAIL_USER     : Gmail address that sends the emails (SMTP fallback)
 // EMAIL_PASSWORD : Gmail App Password (kept secret, never logged)
 // ORDER_NOTIFICATION_EMAIL : where store-owner alerts are sent
-//   Falls back to EMAIL_USER if not separately configured.
+const RESEND_API_KEY = (process.env.RESEND_API_KEY || '').trim();
+const RESEND_FROM = (process.env.RESEND_FROM || 'Art Store <onboarding@resend.dev>').trim();
 const EMAIL_USER = (process.env.EMAIL_USER || '').trim();
 const EMAIL_PASSWORD = (process.env.EMAIL_PASSWORD || '').trim();
 const ORDER_NOTIFICATION_EMAIL = (process.env.ORDER_NOTIFICATION_EMAIL || EMAIL_USER).trim();
@@ -49,10 +52,10 @@ if (!JWT_SECRET) {
 }
 
 // Email config missing hone par sirf warn karo — server band nahi hoga
-if (!EMAIL_USER || !EMAIL_PASSWORD) {
-  console.warn('⚠️  EMAIL_USER / EMAIL_PASSWORD not set. Order emails will be skipped.');
+if (!RESEND_API_KEY && (!EMAIL_USER || !EMAIL_PASSWORD)) {
+  console.warn('⚠️  Neither RESEND_API_KEY nor EMAIL_USER/EMAIL_PASSWORD set. Order emails will be skipped.');
 }
 
 export { MONGODB_URL, PORT, JWT_SECRET, JWT_EXPIRES_IN };
 export { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, WHATSAPP_ACCESS_TOKEN, WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_TO_NUMBER, WHATSAPP_API_VERSION };
-export { EMAIL_USER, EMAIL_PASSWORD, ORDER_NOTIFICATION_EMAIL };
+export { EMAIL_USER, EMAIL_PASSWORD, ORDER_NOTIFICATION_EMAIL, RESEND_API_KEY, RESEND_FROM };
