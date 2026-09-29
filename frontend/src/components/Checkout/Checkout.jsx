@@ -4,7 +4,6 @@ import './Checkout.css';
 import toast from 'react-hot-toast';
 import { useNavigate, Link } from 'react-router-dom';
 import { getDeliveryCharge } from '../../config/delivery.js';
-import razorpayQrImg from '../../assets/razorpay-qr.jpg';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:2026').replace(/\/+$/, '');
 
@@ -73,7 +72,7 @@ export default function Checkout() {
         });
     };
 
-    const handleSubmit = async (e, preferredMethod = 'all') => {
+    const handleSubmit = async (e) => {
         if (e && e.preventDefault) {
             e.preventDefault();
         }
@@ -164,15 +163,6 @@ export default function Checkout() {
 
             const { key, order } = data;
 
-            const prefillData = {
-                name: trimmedName,
-                email: trimmedEmail,
-                contact: trimmedPhone,
-            };
-            if (preferredMethod === 'upi') {
-                prefillData.method = 'upi';
-            }
-
             const options = {
                 key: key || import.meta.env.VITE_RAZORPAY_KEY_ID,
                 amount: order.amount,
@@ -180,7 +170,11 @@ export default function Checkout() {
                 name: 'Art Store',
                 description: 'Payment for order',
                 order_id: order.id,
-                prefill: prefillData,
+                prefill: {
+                    name: trimmedName,
+                    email: trimmedEmail,
+                    contact: trimmedPhone,
+                },
                 theme: {
                     color: '#2f5bd3',
                 },
@@ -196,7 +190,7 @@ export default function Checkout() {
                                 razorpay_order_id: response.razorpay_order_id,
                                 razorpay_payment_id: response.razorpay_payment_id,
                                 razorpay_signature: response.razorpay_signature,
-                                payment_method: preferredMethod === 'upi' ? 'UPI' : 'Online',
+                                payment_method: 'Razorpay',
                             }),
                         });
 
@@ -314,65 +308,7 @@ export default function Checkout() {
                             {isProcessing ? 'Processing…' : '💳 Pay with Razorpay'}
                         </button>
 
-                        {/* Alternative UPI QR Scan Option */}
-                        <div className="upi-payment-option full-width">
-                            <div className="payment-divider">
-                                <span>OR</span>
-                            </div>
 
-                            <div className="upi-qr-card">
-                                <div className="upi-qr-header">
-                                    <h3>Scan & Pay via UPI</h3>
-                                    <p className="upi-qr-subtitle">
-                                        Scan using Google Pay, PhonePe, Paytm, BHIM or any UPI app
-                                    </p>
-                                </div>
-
-                                <div className="upi-qr-action-box">
-                                    <button
-                                        type="button"
-                                        className="upi-dynamic-pay-btn"
-                                        onClick={(e) => handleSubmit(e, 'upi')}
-                                        disabled={isProcessing}
-                                    >
-                                        {isProcessing ? 'Processing…' : '⚡ Pay via UPI / Dynamic QR (Instant Confirmation)'}
-                                    </button>
-                                    <p className="upi-instant-tag">
-                                        ✨ Recommended: Real-time verification, automatic order creation & instant email confirmation
-                                    </p>
-                                </div>
-
-                                <div className="upi-qr-image-wrapper">
-                                    <img
-                                        src={razorpayQrImg}
-                                        alt="Scan & Pay via UPI - Razorpay QR Code"
-                                        className="upi-qr-image"
-                                    />
-                                    <span className="upi-standee-label">Offline Counter QR (Ridhi Yadav)</span>
-                                </div>
-
-                                <div className="upi-qr-info">
-                                    <div className="upi-amount-badge">
-                                        Amount to Pay: <strong>₹{total}</strong>
-                                    </div>
-                                    <div className="upi-instructions">
-                                        <p>
-                                            <strong>📌 How to get instant confirmation:</strong>
-                                        </p>
-                                        <ol>
-                                            <li>Click <strong>Pay via UPI / Dynamic QR</strong> above (or <strong>Pay with Razorpay</strong>).</li>
-                                            <li>Scan the dynamic order QR code inside the secure Razorpay popup with any UPI app.</li>
-                                            <li>Your order is confirmed automatically in real-time with instant email confirmation.</li>
-                                        </ol>
-                                        <div className="upi-verification-note">
-                                            <p>
-                                                💡 <em>Note:</em> Direct scans of the offline counter QR standee above transfer funds to the merchant account and require manual verification by store admins before order dispatch.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
 
                     </form>
                 </div>
