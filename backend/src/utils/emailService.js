@@ -197,7 +197,7 @@ export const sendOwnerOrderEmail = async (order) => {
       : new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
 
     const mailOptions = {
-      from: `"Art Store" <${EMAIL_USER}>`,
+      from: RESEND_API_KEY && RESEND_FROM ? RESEND_FROM : `"Art Store" <${EMAIL_USER}>`,
       to: ownerEmail,
       subject: `🛍️ New Order Received - Art Store #${orderId}`,
       text: `
@@ -236,6 +236,8 @@ Subtotal        : Rs.${subtotal}
 Delivery Charge : Rs.${deliveryCharge}
 Grand Total     : Rs.${grandTotal}
 ----------------------------------------------
+
+Customer delivery is expected within 10–15 days.
       `.trim(),
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #2d2420; line-height: 1.5;">
@@ -258,6 +260,7 @@ Grand Total     : Rs.${grandTotal}
                 <th style="padding: 8px; border: 1px solid #e8e0d8;">Item</th>
                 <th style="padding: 8px; border: 1px solid #e8e0d8;">Qty</th>
                 <th style="padding: 8px; border: 1px solid #e8e0d8;">Price</th>
+                <th style="padding: 8px; border: 1px solid #e8e0d8;">Total</th>
               </tr>
             </thead>
             <tbody>
@@ -266,12 +269,16 @@ Grand Total     : Rs.${grandTotal}
                   <td style="padding: 8px; border: 1px solid #e8e0d8;">${p.name || 'Product'}</td>
                   <td style="padding: 8px; border: 1px solid #e8e0d8;">${p.quantity}</td>
                   <td style="padding: 8px; border: 1px solid #e8e0d8;">₹${p.price}</td>
+                  <td style="padding: 8px; border: 1px solid #e8e0d8;">₹${(Number(p.price) || 0) * (Number(p.quantity) || 0)}</td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
           <p style="margin-top: 16px; text-align: right; font-size: 1.1rem;">
             <strong>Grand Total: ₹${grandTotal}</strong> (Subtotal: ₹${subtotal}, Delivery: ₹${deliveryCharge})
+          </p>
+          <p style="background: #eff6ff; padding: 12px; border-radius: 6px; color: #1e40af; border: 1px solid #bfdbfe; margin-top: 16px;">
+            <strong>Customer delivery is expected within 10–15 days.</strong>
           </p>
         </div>
       `,
@@ -304,6 +311,7 @@ export const sendCustomerOrderEmail = async (order) => {
 
     const orderId = order._id ? order._id.toString() : 'N/A';
     const customerName = order.name || 'Customer';
+    const customerPhone = order.phone || 'N/A';
     const deliveryAddress = `${order.address || ''}, ${order.city || ''} - ${order.pincode || ''}`;
     const products = order.products || [];
     const subtotal = calculateSubtotal(products);
@@ -317,7 +325,7 @@ export const sendCustomerOrderEmail = async (order) => {
       : new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
 
     const mailOptions = {
-      from: `"Art Store" <${EMAIL_USER}>`,
+      from: RESEND_API_KEY && RESEND_FROM ? RESEND_FROM : `"Art Store" <${EMAIL_USER}>`,
       to: customerEmail,
       subject: `Order Confirmation - Art Store #${orderId}`,
       text: `
@@ -351,10 +359,14 @@ Grand Total     : Rs.${grandTotal}
 DELIVERY ADDRESS
 ----------------------------------------------
 ${deliveryAddress}
+Phone: ${customerPhone}
 
 ----------------------------------------------
+Your order has been successfully placed and is expected to be delivered within 10–15 days.
 We will pack your items carefully and update you as your order ships.
 If you have any questions, feel free to reply to this email.
+
+Thank you for shopping with Art Store!
 
 Warm regards,
 Art Store
@@ -377,6 +389,7 @@ Art Store
                 <th style="padding: 8px; border: 1px solid #e8e0d8;">Item</th>
                 <th style="padding: 8px; border: 1px solid #e8e0d8;">Qty</th>
                 <th style="padding: 8px; border: 1px solid #e8e0d8;">Price</th>
+                <th style="padding: 8px; border: 1px solid #e8e0d8;">Total</th>
               </tr>
             </thead>
             <tbody>
@@ -385,6 +398,7 @@ Art Store
                   <td style="padding: 8px; border: 1px solid #e8e0d8;">${p.name || 'Product'}</td>
                   <td style="padding: 8px; border: 1px solid #e8e0d8;">${p.quantity}</td>
                   <td style="padding: 8px; border: 1px solid #e8e0d8;">₹${p.price}</td>
+                  <td style="padding: 8px; border: 1px solid #e8e0d8;">₹${(Number(p.price) || 0) * (Number(p.quantity) || 0)}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -393,9 +407,16 @@ Art Store
             <strong>Grand Total: ₹${grandTotal}</strong> (Delivery: ₹${deliveryCharge})
           </p>
           <h3 style="color: #2f5bd3;">Delivery Address</h3>
-          <p style="background: #f9f9f9; padding: 12px; border-radius: 6px;">${deliveryAddress}</p>
+          <p style="background: #f9f9f9; padding: 12px; border-radius: 6px;">
+            ${deliveryAddress}<br />
+            <strong>Phone:</strong> ${customerPhone}
+          </p>
+          <p style="background: #eff6ff; padding: 12px; border-radius: 6px; color: #1e40af; border: 1px solid #bfdbfe;">
+            <strong>Your order has been successfully placed and is expected to be delivered within 10–15 days.</strong>
+          </p>
           <p style="color: #64748b; font-size: 0.9rem; margin-top: 24px;">
-            If you have any questions, feel free to reply directly to this email.<br />
+            If you have any questions, feel free to reply directly to this email.<br /><br />
+            Thank you for shopping with Art Store!<br /><br />
             Warm regards,<br />
             <strong>Art Store Team 🧶</strong>
           </p>
@@ -428,8 +449,12 @@ export const sendOrderEmails = async (order, options = {}) => {
   // Prevent duplicate sends for the same order unless force=true
   if (orderId && !options.force) {
     if (processedOrders.has(orderId)) {
-      console.log(`ℹ️ [Email] Order #${orderId} emails already processed. Skipping duplicate.`);
+      console.log(`ℹ️ [Email] Order #${orderId} emails already processed (in-memory). Skipping duplicate.`);
       return { success: true, skipped: true, reason: 'already_processed' };
+    }
+    if (order.emailsSent?.customer || order.emailsSent?.owner) {
+      console.log(`ℹ️ [Email] Order #${orderId} emails already processed (DB flag). Skipping duplicate.`);
+      return { success: true, skipped: true, reason: 'already_processed_db' };
     }
   }
 

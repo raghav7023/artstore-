@@ -109,8 +109,14 @@ app.use(limiter);
 // ==========================================
 // Ye allow karta hai ki hum req.body se data read kar sakein
 // JSON format mein data aayega frontend se
-app.use(express.json({ limit: '10kb' })); // 10kb se zyada body reject karo
+app.use(express.json({ 
+  limit: '10kb',
+  verify: (req, res, buf) => {
+    req.rawBody = buf;
+  }
+})); // 10kb se zyada body reject karo
 app.use(express.urlencoded({ extended: true })); // Form data bhi handle karo
+
 
 // ==========================================
 // TEST ROUTE

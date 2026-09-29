@@ -28,7 +28,7 @@ const sanitizeAndCalculateAmount = (products) => {
   const sanitizedProducts = [];
 
   for (const p of products) {
-    const qty = Math.max(1, Math.floor(Number(p.quantity) || 1));
+    const qty = Math.min(100, Math.max(1, Math.floor(Number(p.quantity) || 1)));
     const catalogItem = catalogProducts.find((item) => item.id === Number(p.id));
 
     // Enforce authoritative catalog price if found; otherwise validate p.price
@@ -95,10 +95,8 @@ export const createPaymentOrder = async (req, res) => {
       const calculation = sanitizeAndCalculateAmount(products);
       amountInPaise = calculation.amountInPaise;
       orderProducts = calculation.sanitizedProducts;
-    } else if (amount) {
-      amountInPaise = Math.round(Number(amount));
     } else {
-      return res.status(400).json({ success: false, message: 'Products or amount is required' });
+      return res.status(400).json({ success: false, message: 'Products array is required' });
     }
 
     // Validate minimum amount (Razorpay requires minimum 100 paise)
@@ -182,31 +180,44 @@ export const verifyPayment = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid payment signature' });
     }
 
-    // Find corresponding payment attempt
-    const attempt = await PaymentAttempt.findOne({ razorpay_order_id: rOrderId });
+    // Atomic idempotency: only proceed if we are the one to flip status to 'paid'
+    const attempt = await PaymentAttempt.findOneAndUpdate(
+      { razorpay_order_id: rOrderId, status: { $ne: 'paid' } },
+      { $set: { status: 'paid' } },
+      { new: true }
+    );
+
     if (!attempt) {
-      return res.status(404).json({ success: false, message: 'Payment attempt not found' });
+      // Either attempt doesn't exist, or it was already marked paid by a webhook
+      const existingAttempt = await PaymentAttempt.findOne({ razorpay_order_id: rOrderId });
+      if (!existingAttempt) {
+        return res.status(404).json({ success: false, message: 'Payment attempt not found' });
+      }
+      if (existingAttempt.status === 'paid') {
+        const existingOrder = await Order.findOne({ 'razorpay.order_id': rOrderId });
+        
+        // Authorization check: ensure caller owns this attempt before returning existing order
+        const currentUserId = req.user?.id || req.user?._id;
+        if (existingAttempt.user && currentUserId && existingAttempt.user.toString() !== currentUserId.toString() && req.user?.role !== 'admin') {
+          return res.status(403).json({ success: false, message: 'Unauthorized verification attempt' });
+        }
+
+        return res.status(200).json({
+          success: true,
+          message: 'Payment already processed',
+          order: existingOrder,
+        });
+      }
+      return res.status(500).json({ success: false, message: 'Payment verification failed' });
     }
 
     // Authorization check: ensure caller owns this attempt
     const currentUserId = req.user?.id || req.user?._id;
     if (attempt.user && currentUserId && attempt.user.toString() !== currentUserId.toString() && req.user?.role !== 'admin') {
+      // Note: We've already marked it as paid, which is technically correct since Razorpay confirmed it,
+      // but we block this specific user from seeing the result if they don't own it.
       return res.status(403).json({ success: false, message: 'Unauthorized verification attempt' });
     }
-
-    if (attempt.status === 'paid') {
-      // Idempotency: return existing order, never duplicate
-      const existingOrder = await Order.findOne({ 'razorpay.order_id': rOrderId });
-      return res.status(200).json({
-        success: true,
-        message: 'Payment already processed',
-        order: existingOrder,
-      });
-    }
-
-    // Mark attempt paid
-    attempt.status = 'paid';
-    await attempt.save();
 
     // Create final Order record (store razorpay ids)
     const newOrder = await Order.create({
@@ -270,7 +281,8 @@ export const resendOrderEmail = async (req, res) => {
     }
 
     // Security check: Only allow customer who placed the order or admin
-    if (req.user && order.user && req.user._id.toString() !== order.user.toString() && req.user.role !== 'admin') {
+    const callerId = req.user?.id || req.user?._id;
+    if (req.user && order.user && callerId?.toString() !== order.user.toString() && req.user.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'Unauthorized to resend emails for this order' });
     }
 
@@ -291,10 +303,10 @@ export const handleRazorpayWebhook = async (req, res) => {
     }
 
     const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET || RAZORPAY_KEY_SECRET;
-    const bodyStr = JSON.stringify(req.body);
+    const rawBodyStr = req.rawBody ? req.rawBody.toString('utf8') : JSON.stringify(req.body);
     const expectedSignature = crypto
       .createHmac('sha256', webhookSecret)
-      .update(bodyStr)
+      .update(rawBodyStr)
       .digest('hex');
 
     const signatureBuffer = Buffer.from(signature, 'utf8');
@@ -317,17 +329,22 @@ export const handleRazorpayWebhook = async (req, res) => {
       const rPaymentId = paymentEntity?.id;
 
       if (rOrderId) {
-        // Enforce idempotency: if order already exists, do not duplicate
-        const existingOrder = await Order.findOne({ 'razorpay.order_id': rOrderId });
-        if (existingOrder) {
-          console.log(`ℹ️ [Webhook] Order already processed for Razorpay Order #${rOrderId}`);
-          return res.status(200).json({ success: true, message: 'Order already processed', orderId: existingOrder._id });
-        }
+        // Atomic lock on PaymentAttempt to prevent race conditions with verify endpoint
+        const attempt = await PaymentAttempt.findOneAndUpdate(
+          { razorpay_order_id: rOrderId, status: { $ne: 'paid' } },
+          { $set: { status: 'paid' } },
+          { new: true }
+        );
 
-        const attempt = await PaymentAttempt.findOne({ razorpay_order_id: rOrderId });
-        if (attempt) {
-          attempt.status = 'paid';
-          await attempt.save();
+        if (!attempt) {
+          // If we didn't update it, it was already processed (or doesn't exist)
+          const existingOrder = await Order.findOne({ 'razorpay.order_id': rOrderId });
+          if (existingOrder) {
+            console.log(`ℹ️ [Webhook] Order already processed for Razorpay Order #${rOrderId}`);
+            return res.status(200).json({ success: true, message: 'Order already processed', orderId: existingOrder._id });
+          }
+          return res.status(200).json({ success: true, message: 'Order processing elsewhere or attempt not found' });
+        }
 
           const paymentMethodDetail = paymentEntity?.method ? `Razorpay (${paymentEntity.method.toUpperCase()})` : 'Razorpay';
 
@@ -365,7 +382,6 @@ export const handleRazorpayWebhook = async (req, res) => {
           }
 
           return res.status(200).json({ success: true, message: 'Payment verified and order created via webhook', orderId: newOrder._id });
-        }
       }
     }
 

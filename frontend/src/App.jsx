@@ -2,7 +2,6 @@
 import { Route, Routes } from 'react-router-dom'
 import Home from './components/Home/Home'
 import Authentication from './components/Authentication/Authentication.jsx'
-import Order from './components/Order/Order.jsx'
 import Cart from './components/Cart/Cart.jsx'
 import Products from './components/Products/Products.jsx'
 import Customorders from './components/Customorders/Customorders.jsx';  

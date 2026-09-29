@@ -16,7 +16,7 @@ export default function Cart() {
 
     const updated = cartItems.map(item =>
       item.id === id
-        ? { ...item, quantity: item.quantity + 1 }
+        ? { ...item, quantity: Math.min(100, item.quantity + 1) }
         : item
     );
 
