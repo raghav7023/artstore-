@@ -97,10 +97,11 @@ export const createTransporter = (port = 465, hostIp = null) => {
 // 2. Attempts Port 465 (SSL, direct IPv4) SMTP fallback
 // 3. Attempts Port 587 (STARTTLS, direct IPv4) SMTP fallback
 export const sendMailWithFallback = async (mailOptions) => {
-  // Priority 1: Resend HTTPS API (Port 443 — works everywhere, never blocked by Render Free tier)
+  // 1. Try Resend HTTPS REST API (Port 443) if configured
   if (RESEND_API_KEY) {
     try {
       const resend = new Resend(RESEND_API_KEY);
+      // Use the explicitly configured sender, or the sandbox domain as a fallback
       const fromAddress = RESEND_FROM || 'Art Store <onboarding@resend.dev>';
       const toAddresses = Array.isArray(mailOptions.to) ? mailOptions.to : [mailOptions.to];
 
@@ -114,40 +115,55 @@ export const sendMailWithFallback = async (mailOptions) => {
 
       if (error) {
         console.error('❌ [Resend API Error]:', error.message || error);
-        // Do not abort; fall through to SMTP fallback if credentials exist
+        // Fall through to SMTP fallback below
       } else {
         console.log(`✅ [Email/Resend] Email dispatched successfully to ${toAddresses.join(', ')} (MsgId: ${data?.id})`);
         return { success: true, messageId: data?.id, provider: 'resend' };
       }
     } catch (resendErr) {
       console.error('❌ [Email/Resend] Network exception:', resendErr.message);
+      // Fall through to SMTP fallback below
     }
   }
 
-  // Priority 2: SMTP Fallback
+  // 2. SMTP Fallback: Try Port 465 (SSL), then Port 587 (STARTTLS) via Nodemailer
   if (!EMAIL_USER || !EMAIL_PASSWORD) {
-    return { success: false, reason: 'unconfigured' };
+    return { success: false, reason: 'no_email_provider_configured' };
   }
 
   const hostIp = await resolveGmailIpv4();
 
-  // Attempt 1: Port 465 (SSL, direct IPv4)
+  // Ensure the from address uses the SMTP user if not already set
+  const smtpMailOptions = {
+    ...mailOptions,
+    from: mailOptions.from || `"Art Store" <${EMAIL_USER}>`,
+  };
+
+  // 2a. Try Port 465 (SSL)
   try {
     const transporter465 = createTransporter(465, hostIp);
-    const info = await transporter465.sendMail(mailOptions);
-    return { success: true, messageId: info.messageId, port: 465, ip: hostIp, provider: 'smtp' };
-  } catch (err465) {
-    console.warn(`⚠️ [Email] Port 465 send failed (${err465.message}). Retrying via Port 587 (STARTTLS, direct IPv4)...`);
-    // Attempt 2: Port 587 (STARTTLS, direct IPv4)
-    try {
-      const transporter587 = createTransporter(587, hostIp);
-      const info = await transporter587.sendMail(mailOptions);
-      return { success: true, messageId: info.messageId, port: 587, fallback: true, ip: hostIp, provider: 'smtp' };
-    } catch (err587) {
-      console.error(`❌ [Email] SMTP dispatch failed on both ports 465 and 587:`, err587.message);
-      return { success: false, error: err587.message, code: err587.code };
+    if (transporter465) {
+      const info = await transporter465.sendMail(smtpMailOptions);
+      console.log(`✅ [Email/SMTP] Email sent via port 465 to ${smtpMailOptions.to} (MsgId: ${info.messageId})`);
+      return { success: true, messageId: info.messageId, provider: 'smtp', port: 465 };
     }
+  } catch (err465) {
+    console.warn(`⚠️ [Email/SMTP] Port 465 failed: ${err465.message}`);
   }
+
+  // 2b. Try Port 587 (STARTTLS)
+  try {
+    const transporter587 = createTransporter(587, hostIp);
+    if (transporter587) {
+      const info = await transporter587.sendMail(smtpMailOptions);
+      console.log(`✅ [Email/SMTP] Email sent via port 587 to ${smtpMailOptions.to} (MsgId: ${info.messageId})`);
+      return { success: true, messageId: info.messageId, provider: 'smtp', port: 587 };
+    }
+  } catch (err587) {
+    console.warn(`⚠️ [Email/SMTP] Port 587 failed: ${err587.message}`);
+  }
+
+  return { success: false, reason: 'all_email_providers_failed' };
 };
 
 // Helper: Calculate subtotal from products
