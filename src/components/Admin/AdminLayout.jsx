@@ -26,7 +26,7 @@ export default function AdminLayout() {
       try {
         const token = localStorage.getItem('artstore_token');
         const storedUser = JSON.parse(localStorage.getItem('artstore_user') || 'null');
-        
+
         if (!token || !storedUser || storedUser.role !== 'admin') {
           navigate('/', { replace: true });
           return;
@@ -37,7 +37,7 @@ export default function AdminLayout() {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
-        
+
         if (!res.ok || !data.success || data.user?.role !== 'admin') {
           navigate('/', { replace: true });
           return;
@@ -76,7 +76,7 @@ export default function AdminLayout() {
     <div className="admin-layout">
       {/* Mobile overlay */}
       {sidebarOpen && <div className="admin-overlay" onClick={() => setSidebarOpen(false)} />}
-      
+
       {/* Sidebar */}
       <aside className={`admin-sidebar ${sidebarOpen ? 'open' : ''}`}>
         <div className="admin-sidebar-header">
@@ -86,7 +86,7 @@ export default function AdminLayout() {
           </Link>
           <span className="admin-badge">Admin</span>
         </div>
-        
+
         <nav className="admin-nav">
           {sidebarItems.map((item) => (
             <Link
@@ -100,7 +100,7 @@ export default function AdminLayout() {
             </Link>
           ))}
         </nav>
-        
+
         <div className="admin-sidebar-footer">
           <div className="admin-user-info">
             <span className="admin-user-avatar">👤</span>
@@ -115,7 +115,7 @@ export default function AdminLayout() {
           </div>
         </div>
       </aside>
-      
+
       {/* Main content */}
       <main className="admin-main">
         <header className="admin-topbar">

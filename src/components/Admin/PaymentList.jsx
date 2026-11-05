@@ -22,7 +22,7 @@ export default function PaymentList() {
       const params = new URLSearchParams({ page: String(page), limit: '20' });
       if (statusFilter) params.append('status', statusFilter);
       if (search) params.append('search', search);
-      
+
       const res = await fetch(`${API_BASE_URL}/api/admin/payments?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -38,7 +38,7 @@ export default function PaymentList() {
     }
   }, [statusFilter, search]);
 
-  useEffect(() => { 
+  useEffect(() => {
     let ignore = false;
     const load = async () => {
       try {
@@ -47,7 +47,7 @@ export default function PaymentList() {
         const params = new URLSearchParams({ page: String(currentPage), limit: '20' });
         if (statusFilter) params.append('status', statusFilter);
         if (search) params.append('search', search);
-        
+
         const res = await fetch(`${API_BASE_URL}/api/admin/payments?${params}`, {
           headers: { Authorization: `Bearer ${token}` },
         });

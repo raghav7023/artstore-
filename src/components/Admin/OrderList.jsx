@@ -23,7 +23,7 @@ export default function OrderList() {
       const params = new URLSearchParams({ page: String(page), limit: '20' });
       if (search) params.append('search', search);
       if (statusFilter) params.append('status', statusFilter);
-      
+
       const res = await fetch(`${API_BASE_URL}/api/admin/orders?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -40,7 +40,7 @@ export default function OrderList() {
     }
   }, [search, statusFilter]);
 
-  useEffect(() => { 
+  useEffect(() => {
     let ignore = false;
     const load = async () => {
       try {
@@ -49,7 +49,7 @@ export default function OrderList() {
         const params = new URLSearchParams({ page: String(currentPage), limit: '20' });
         if (search) params.append('search', search);
         if (statusFilter) params.append('status', statusFilter);
-        
+
         const res = await fetch(`${API_BASE_URL}/api/admin/orders?${params}`, {
           headers: { Authorization: `Bearer ${token}` },
         });

@@ -15,7 +15,7 @@ export default function OrderDetail() {
   const [error, setError] = useState('');
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
-  useEffect(() => { 
+  useEffect(() => {
     let ignore = false;
     const fetchOrder = async () => {
       try {
@@ -97,7 +97,7 @@ export default function OrderDetail() {
   return (
     <div className="admin-page">
       <Link to="/admin/orders" className="back-link">← Back to Orders</Link>
-      
+
       <div className="detail-header">
         <div>
           <h2>Order #{order._id?.slice(-8)}</h2>

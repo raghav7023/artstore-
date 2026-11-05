@@ -59,7 +59,7 @@ export default function UserDetail() {
   return (
     <div className="admin-page">
       <Link to="/admin/users" className="back-link">← Back to Users</Link>
-      
+
       <div className="detail-header">
         <div className="detail-avatar">👤</div>
         <div className="detail-info">
