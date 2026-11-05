@@ -148,6 +148,19 @@ export const signin = async (req, res) => {
       });
     }
 
+    // Step 4.5: Check account status (active/inactive)
+    if (user.status === 'inactive') {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account has been deactivated. Please contact support.',
+      });
+    }
+
+    // Update lastLoginAt asynchronously without blocking response
+    User.updateOne({ _id: user._id }, { $set: { lastLoginAt: new Date() } }).catch((err) => {
+      console.warn('Failed to update lastLoginAt:', err.message);
+    });
+
     // Step 5: Token banao
     const token = createToken(user._id, user.role);
 
@@ -162,6 +175,8 @@ export const signin = async (req, res) => {
         email: user.email,
         phone: user.phone || '',
         role: user.role,
+        status: user.status || 'active',
+        lastLoginAt: user.lastLoginAt,
       },
     });
   } catch (error) {
@@ -199,6 +214,8 @@ export const getProfile = async (req, res) => {
         email: user.email,
         phone: user.phone,
         role: user.role,
+        status: user.status || 'active',
+        lastLoginAt: user.lastLoginAt,
         createdAt: user.createdAt,
       },
     });

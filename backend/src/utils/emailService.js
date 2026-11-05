@@ -17,8 +17,10 @@
 import nodemailer from 'nodemailer';
 import dns from 'dns';
 import { Resend } from 'resend';
+import mongoose from 'mongoose';
 import { EMAIL_USER, EMAIL_PASSWORD, ORDER_NOTIFICATION_EMAIL, RESEND_API_KEY, RESEND_FROM } from '../../Config.mjs';
 import Order from '../models/Order.model.js';
+import EmailLog from '../models/EmailLog.model.js';
 
 // Force Node.js DNS resolution to prioritize IPv4 globally.
 // Crucial for Render/cloud Linux containers where IPv6 routes are unavailable,
@@ -97,13 +99,19 @@ export const createTransporter = (port = 465, hostIp = null) => {
 // 2. Attempts Port 465 (SSL, direct IPv4) SMTP fallback
 // 3. Attempts Port 587 (STARTTLS, direct IPv4) SMTP fallback
 export const sendMailWithFallback = async (mailOptions) => {
+  let resendFailure = null;
+
   // 1. Try Resend HTTPS REST API (Port 443) if configured
   if (RESEND_API_KEY) {
     try {
       const resend = new Resend(RESEND_API_KEY);
-      // Use the explicitly configured sender, or the sandbox domain as a fallback
-      const fromAddress = RESEND_FROM || 'Art Store <onboarding@resend.dev>';
+      // Use the explicitly configured sender, or the verified domain default
+      const fromAddress = RESEND_FROM || 'Art Store <orders@artstorestudio.com>';
       const toAddresses = Array.isArray(mailOptions.to) ? mailOptions.to : [mailOptions.to];
+
+      if (fromAddress.includes('@resend.dev')) {
+        console.warn('⚠️ [Email/Resend] Sending with sandbox domain (@resend.dev). Note: Resend only delivers to the verified account owner email address in sandbox mode.');
+      }
 
       const { data, error } = await resend.emails.send({
         from: fromAddress,
@@ -115,30 +123,36 @@ export const sendMailWithFallback = async (mailOptions) => {
 
       if (error) {
         console.error('❌ [Resend API Error]:', error.message || error);
+        resendFailure = error.message || (typeof error === 'object' ? JSON.stringify(error) : String(error));
         // Fall through to SMTP fallback below
       } else {
-        console.log(`✅ [Email/Resend] Email dispatched successfully to ${toAddresses.join(', ')} (MsgId: ${data?.id})`);
-        return { success: true, messageId: data?.id, provider: 'resend' };
+        console.log(`✅ [Email/Resend] Email accepted by Resend API for ${toAddresses.join(', ')} (MsgId: ${data?.id})`);
+        return { success: true, messageId: data?.id, provider: 'resend', status: 'accepted' };
       }
     } catch (resendErr) {
       console.error('❌ [Email/Resend] Network exception:', resendErr.message);
+      resendFailure = `Network exception: ${resendErr.message}`;
       // Fall through to SMTP fallback below
     }
   }
 
   // 2. SMTP Fallback: Try Port 465 (SSL), then Port 587 (STARTTLS) via Nodemailer
   if (!EMAIL_USER || !EMAIL_PASSWORD) {
-    return { success: false, reason: 'no_email_provider_configured' };
+    const reason = RESEND_API_KEY
+      ? `resend_failed_no_smtp: ${resendFailure || 'Resend error'}`
+      : 'no_email_provider_configured';
+    return { success: false, reason, error: resendFailure || 'no_email_provider_configured' };
   }
 
   const hostIp = await resolveGmailIpv4();
 
-  // Ensure the from address uses the SMTP user if not already set
+  // For SMTP, always ensure from uses the authenticated Gmail sender
   const smtpMailOptions = {
     ...mailOptions,
-    from: mailOptions.from || `"Art Store" <${EMAIL_USER}>`,
+    from: `"Art Store" <${EMAIL_USER}>`,
   };
 
+  let smtp465Error = null;
   // 2a. Try Port 465 (SSL)
   try {
     const transporter465 = createTransporter(465, hostIp);
@@ -149,8 +163,10 @@ export const sendMailWithFallback = async (mailOptions) => {
     }
   } catch (err465) {
     console.warn(`⚠️ [Email/SMTP] Port 465 failed: ${err465.message}`);
+    smtp465Error = err465.message;
   }
 
+  let smtp587Error = null;
   // 2b. Try Port 587 (STARTTLS)
   try {
     const transporter587 = createTransporter(587, hostIp);
@@ -161,9 +177,16 @@ export const sendMailWithFallback = async (mailOptions) => {
     }
   } catch (err587) {
     console.warn(`⚠️ [Email/SMTP] Port 587 failed: ${err587.message}`);
+    smtp587Error = err587.message;
   }
 
-  return { success: false, reason: 'all_email_providers_failed' };
+  const detailedError = [
+    resendFailure ? `Resend: ${resendFailure}` : null,
+    smtp465Error ? `SMTP 465: ${smtp465Error}` : null,
+    smtp587Error ? `SMTP 587: ${smtp587Error}` : null,
+  ].filter(Boolean).join(' | ');
+
+  return { success: false, reason: 'all_email_providers_failed', error: detailedError || 'all_email_providers_failed' };
 };
 
 // Helper: Calculate subtotal from products
@@ -183,6 +206,60 @@ const formatProductsText = (products = []) => {
         `  * ${p.name || 'Product'} | Qty: ${p.quantity} | Price: Rs.${p.price} | Total: Rs.${(Number(p.price) || 0) * (Number(p.quantity) || 0)}`
     )
     .join('\n');
+};
+
+// Helper: Create an EmailLog entry and return it
+export const createEmailLog = async ({
+  recipient, recipientName = '', emailType, subject,
+  relatedOrder, relatedUser, provider = 'none', status = 'pending',
+  metadata = {},
+}) => {
+  try {
+    const isOrderObjId = relatedOrder && mongoose.Types.ObjectId.isValid(relatedOrder);
+    const isUserObjId = relatedUser && mongoose.Types.ObjectId.isValid(relatedUser);
+    return await EmailLog.create({
+      recipient,
+      recipientName,
+      emailType,
+      subject,
+      relatedOrder: isOrderObjId ? relatedOrder : null,
+      relatedUser: isUserObjId ? relatedUser : null,
+      provider,
+      status,
+      attemptCount: 0,
+      metadata: {
+        ...metadata,
+        ...((!isOrderObjId && relatedOrder) ? { rawOrderId: String(relatedOrder) } : {}),
+        ...((!isUserObjId && relatedUser) ? { rawUserId: String(relatedUser) } : {}),
+      },
+    });
+  } catch (err) {
+    console.warn('⚠️ [EmailLog] Failed to create email log entry:', err.message);
+    return null;
+  }
+};
+
+// Helper: Update an EmailLog entry with send result
+export const updateEmailLog = async (logEntry, result) => {
+  if (!logEntry) return;
+  try {
+    const update = {
+      attemptCount: (logEntry.attemptCount || 0) + 1,
+      lastAttemptAt: new Date(),
+    };
+    if (result.success) {
+      update.status = 'sent';
+      update.provider = result.provider || 'resend';
+      update.providerMessageId = result.messageId || '';
+      update.errorMessage = '';
+    } else {
+      update.status = 'failed';
+      update.errorMessage = result.error || result.reason || 'Unknown error';
+    }
+    await EmailLog.updateOne({ _id: logEntry._id }, { $set: update });
+  } catch (err) {
+    console.warn('⚠️ [EmailLog] Failed to update email log entry:', err.message);
+  }
 };
 
 // ============================================================
@@ -300,14 +377,26 @@ Customer delivery is expected within 10–15 days.
       `,
     };
 
+    // Create email log entry
+    const logEntry = await createEmailLog({
+      recipient: ownerEmail,
+      recipientName: 'Store Owner',
+      emailType: 'order_confirmation_owner',
+      subject: mailOptions.subject,
+      relatedOrder: order._id,
+      relatedUser: order.user,
+    });
+
     const dispatch = await sendMailWithFallback(mailOptions);
+    await updateEmailLog(logEntry, dispatch);
+
     if (!dispatch.success) {
       console.error(`❌ [Email] Failed to send store owner email for Order #${orderId}:`, dispatch.error || dispatch.reason);
-      return { success: false, error: dispatch.error || dispatch.reason };
+      return { success: false, error: dispatch.error || dispatch.reason, logId: logEntry?._id };
     }
 
     console.log(`✅ [Email] Store owner notification sent for Order #${orderId} to ${ownerEmail} (MsgId: ${dispatch.messageId}, Port: ${dispatch.port})`);
-    return { success: true, messageId: dispatch.messageId, to: ownerEmail, port: dispatch.port };
+    return { success: true, messageId: dispatch.messageId, to: ownerEmail, port: dispatch.port, logId: logEntry?._id };
   } catch (error) {
     console.error(`❌ [Email] Failed to send store owner email for Order #${order?._id || 'unknown'}:`, error.message);
     return { success: false, error: error.message };
@@ -440,14 +529,26 @@ Art Store
       `,
     };
 
+    // Create email log entry
+    const logEntry = await createEmailLog({
+      recipient: customerEmail,
+      recipientName: customerName,
+      emailType: 'order_confirmation_customer',
+      subject: mailOptions.subject,
+      relatedOrder: order._id,
+      relatedUser: order.user,
+    });
+
     const dispatch = await sendMailWithFallback(mailOptions);
+    await updateEmailLog(logEntry, dispatch);
+
     if (!dispatch.success) {
       console.error(`❌ [Email] Failed to send customer confirmation email for Order #${orderId}:`, dispatch.error || dispatch.reason);
-      return { success: false, error: dispatch.error || dispatch.reason };
+      return { success: false, error: dispatch.error || dispatch.reason, logId: logEntry?._id };
     }
 
     console.log(`✅ [Email] Customer confirmation email sent for Order #${orderId} to ${customerEmail} (MsgId: ${dispatch.messageId}, Port: ${dispatch.port})`);
-    return { success: true, messageId: dispatch.messageId, to: customerEmail, port: dispatch.port };
+    return { success: true, messageId: dispatch.messageId, to: customerEmail, port: dispatch.port, logId: logEntry?._id };
   } catch (error) {
     console.error(`❌ [Email] Failed to send customer confirmation email for Order #${order?._id || 'unknown'}:`, error.message);
     return { success: false, error: error.message };
@@ -462,53 +563,58 @@ export const sendOrderEmails = async (order, options = {}) => {
 
   const orderId = order._id ? order._id.toString() : null;
 
-  // Prevent duplicate sends for the same order unless force=true
+  // Prevent duplicate sends unless force
   if (orderId && !options.force) {
-    if (processedOrders.has(orderId)) {
+    const dbOwnerSent = !!order.emailsSent?.owner;
+    const dbCustomerSent = !!order.emailsSent?.customer;
+    if (processedOrders.has(orderId) && dbOwnerSent && dbCustomerSent) {
       console.log(`ℹ️ [Email] Order #${orderId} emails already processed (in-memory). Skipping duplicate.`);
       return { success: true, skipped: true, reason: 'already_processed' };
     }
-    if (order.emailsSent?.customer || order.emailsSent?.owner) {
+    if (dbOwnerSent && dbCustomerSent) {
       console.log(`ℹ️ [Email] Order #${orderId} emails already processed (DB flag). Skipping duplicate.`);
       return { success: true, skipped: true, reason: 'already_processed_db' };
     }
   }
 
-  // Send both emails in parallel
-  const [ownerRes, customerRes] = await Promise.allSettled([
-    sendOwnerOrderEmail(order),
-    sendCustomerOrderEmail(order),
-  ]);
+  // Determine which emails need sending based on DB flags
+  const needOwner = !(order.emailsSent?.owner);
+  const needCustomer = !(order.emailsSent?.customer);
+
+  const ownerPromise = needOwner ? sendOwnerOrderEmail(order) : Promise.resolve({ success: true, skipped: true });
+  const customerPromise = needCustomer ? sendCustomerOrderEmail(order) : Promise.resolve({ success: true, skipped: true });
+
+  const [ownerRes, customerRes] = await Promise.allSettled([ownerPromise, customerPromise]);
 
   const ownerResult = ownerRes.status === 'fulfilled' ? ownerRes.value : { success: false, error: ownerRes.reason?.message };
   const customerResult = customerRes.status === 'fulfilled' ? customerRes.value : { success: false, error: customerRes.reason?.message };
 
-  if (orderId && (ownerResult?.success || customerResult?.success)) {
+  // Persist any successful delivery status (owner or customer)
+  try {
+    await Order.updateOne(
+      { _id: order._id },
+      {
+        $set: {
+          'emailsSent.owner': ownerResult?.skipped ? order.emailsSent?.owner : Boolean(ownerResult?.success),
+          'emailsSent.customer': customerResult?.skipped ? order.emailsSent?.customer : Boolean(customerResult?.success),
+          'emailsSent.sentAt': new Date(),
+        },
+      }
+    );
+  } catch (dbErr) {
+    console.warn('⚠️ [Email] Could not update emailsSent in Order document:', dbErr.message);
+  }
+
+  // Mark in-memory processed only when both emails are complete (either previously or newly succeeded)
+  const ownerComplete = Boolean(order.emailsSent?.owner || (ownerResult?.success && !ownerResult?.skipped));
+  const customerComplete = Boolean(order.emailsSent?.customer || (customerResult?.success && !customerResult?.skipped));
+  if (orderId && ownerComplete && customerComplete) {
     processedOrders.add(orderId);
     const timer = setTimeout(() => processedOrders.delete(orderId), 3600000);
     if (timer.unref) timer.unref();
-
-    // Persist email delivery status in Order document
-    try {
-      await Order.updateOne(
-        { _id: order._id },
-        {
-          $set: {
-            'emailsSent.owner': Boolean(ownerResult?.success),
-            'emailsSent.customer': Boolean(customerResult?.success),
-            'emailsSent.sentAt': new Date(),
-          },
-        }
-      );
-    } catch (dbErr) {
-      console.warn('⚠️ [Email] Could not update emailsSent in Order document:', dbErr.message);
-    }
   }
 
-  return {
-    owner: ownerResult,
-    customer: customerResult,
-  };
+  return { owner: ownerResult, customer: customerResult };
 };
 
 // ============================================================
@@ -553,7 +659,7 @@ export const sendCustomOrderOwnerEmail = async (customOrder) => {
     }
 
     const mailOptions = {
-      from: `"Art Store" <${EMAIL_USER}>`,
+      from: RESEND_API_KEY && RESEND_FROM ? RESEND_FROM : `"Art Store" <${EMAIL_USER}>`,
       to: ownerEmail,
       subject: `New Custom Order Received - Art Store #${orderId}`,
       text: `
@@ -591,7 +697,16 @@ ${imageInfo}
       `.trim(),
     };
 
+    const logEntry = await createEmailLog({
+      recipient: ownerEmail,
+      recipientName: 'Store Owner',
+      emailType: 'custom_order_owner',
+      subject: mailOptions.subject,
+      relatedOrder: customOrder._id,
+    });
+
     const dispatch = await sendMailWithFallback(mailOptions);
+    await updateEmailLog(logEntry, dispatch);
     if (dispatch.success) {
       console.log(`Custom order owner email sent successfully for Order #${orderId} to ${ownerEmail} (MsgId: ${dispatch.messageId}, Port: ${dispatch.port})`);
     } else {
@@ -620,7 +735,7 @@ export const sendCustomOrderCustomerEmail = async (customOrder) => {
     const storeContactEmail = ORDER_NOTIFICATION_EMAIL || EMAIL_USER;
 
     const mailOptions = {
-      from: `"Art Store" <${EMAIL_USER}>`,
+      from: RESEND_API_KEY && RESEND_FROM ? RESEND_FROM : `"Art Store" <${EMAIL_USER}>`,
       to: customerEmail,
       subject: `Custom Order Confirmation - Art Store #${orderId}`,
       text: `
@@ -655,7 +770,16 @@ Art Store Team
       `.trim(),
     };
 
+    const logEntry = await createEmailLog({
+      recipient: customerEmail,
+      recipientName: customerName,
+      emailType: 'custom_order_customer',
+      subject: mailOptions.subject,
+      relatedOrder: customOrder._id,
+    });
+
     const dispatch = await sendMailWithFallback(mailOptions);
+    await updateEmailLog(logEntry, dispatch);
     if (dispatch.success) {
       console.log(`Custom order customer email sent successfully for Order #${orderId} to ${customerEmail} (MsgId: ${dispatch.messageId}, Port: ${dispatch.port})`);
     } else {

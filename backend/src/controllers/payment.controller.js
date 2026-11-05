@@ -195,11 +195,26 @@ export const verifyPayment = async (req, res) => {
       }
       if (existingAttempt.status === 'paid') {
         const existingOrder = await Order.findOne({ 'razorpay.order_id': rOrderId });
-        
+
         // Authorization check: ensure caller owns this attempt before returning existing order
         const currentUserId = req.user?.id || req.user?._id;
         if (existingAttempt.user && currentUserId && existingAttempt.user.toString() !== currentUserId.toString() && req.user?.role !== 'admin') {
           return res.status(403).json({ success: false, message: 'Unauthorized verification attempt' });
+        }
+
+        // Retry any incomplete email notifications for the existing order (no duplicate order created)
+        if (existingOrder) {
+          const ownerSent = !!existingOrder.emailsSent?.owner;
+          const customerSent = !!existingOrder.emailsSent?.customer;
+          if (!ownerSent || !customerSent) {
+            console.log(`ℹ️ [verifyPayment] Retrying incomplete notifications for Order #${existingOrder._id} (owner:${ownerSent}, customer:${customerSent})`);
+            try {
+              const retryResult = await sendOrderEmails(existingOrder.toObject ? existingOrder.toObject() : existingOrder);
+              console.log('Email retry result (verify duplicate path):', retryResult);
+            } catch (retryErr) {
+              console.error('Non-critical email retry failure (verify duplicate path):', retryErr?.message || retryErr);
+            }
+          }
         }
 
         return res.status(200).json({
@@ -341,6 +356,20 @@ export const handleRazorpayWebhook = async (req, res) => {
           const existingOrder = await Order.findOne({ 'razorpay.order_id': rOrderId });
           if (existingOrder) {
             console.log(`ℹ️ [Webhook] Order already processed for Razorpay Order #${rOrderId}`);
+
+            // Retry any incomplete email notifications (no duplicate order created)
+            const ownerSent = !!existingOrder.emailsSent?.owner;
+            const customerSent = !!existingOrder.emailsSent?.customer;
+            if (!ownerSent || !customerSent) {
+              console.log(`ℹ️ [Webhook] Retrying incomplete notifications for Order #${existingOrder._id} (owner:${ownerSent}, customer:${customerSent})`);
+              try {
+                const retryResult = await sendOrderEmails(existingOrder.toObject ? existingOrder.toObject() : existingOrder);
+                console.log('Email retry result (webhook duplicate path):', retryResult);
+              } catch (retryErr) {
+                console.error('Non-critical email retry failure (webhook duplicate path):', retryErr?.message || retryErr);
+              }
+            }
+
             return res.status(200).json({ success: true, message: 'Order already processed', orderId: existingOrder._id });
           }
           return res.status(200).json({ success: true, message: 'Order processing elsewhere or attempt not found' });

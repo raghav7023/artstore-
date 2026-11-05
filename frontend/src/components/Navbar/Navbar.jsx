@@ -80,9 +80,17 @@ export default function Navbar() {
             <span className="btn-text">Cart</span>
           </Link>
           {user && (
-            <Link to="/admin/orders" className="nav-btn">
+            <Link to="/orders" className="nav-btn">
               <span className="icon">📦</span>
               <span className="btn-text">Orders</span>
+            </Link>
+          )}
+
+          {/* Admin Dashboard - visible only to admin users */}
+          {user && user.role === 'admin' && (
+            <Link to="/admin" className="nav-btn">
+              <span className="icon">📊</span>
+              <span className="btn-text">Admin</span>
             </Link>
           )}
 
