@@ -34,7 +34,7 @@ const WHATSAPP_API_VERSION = process.env.WHATSAPP_API_VERSION || 'v19.0';
 // EMAIL_PASSWORD : Gmail App Password (kept secret, never logged)
 // ORDER_NOTIFICATION_EMAIL : where store-owner alerts are sent
 const RESEND_API_KEY = (process.env.RESEND_API_KEY || '').trim();
-const RESEND_FROM = (process.env.RESEND_FROM || 'Art Store <onboarding@resend.dev>').trim();
+const RESEND_FROM = (process.env.RESEND_FROM || 'Art Store <orders@artstorestudio.com>').trim();
 const EMAIL_USER = (process.env.EMAIL_USER || '').trim();
 const EMAIL_PASSWORD = (process.env.EMAIL_PASSWORD || '').trim();
 const ORDER_NOTIFICATION_EMAIL = (process.env.ORDER_NOTIFICATION_EMAIL || EMAIL_USER).trim();
@@ -51,9 +51,15 @@ if (!JWT_SECRET) {
   process.exit(1);
 }
 
-// Email config missing hone par sirf warn karo — server band nahi hoga
+// Email config diagnostics (safe - never logs secrets)
 if (!RESEND_API_KEY && (!EMAIL_USER || !EMAIL_PASSWORD)) {
   console.warn('⚠️  Neither RESEND_API_KEY nor EMAIL_USER/EMAIL_PASSWORD set. Order emails will be skipped.');
+} else if (RESEND_API_KEY && RESEND_FROM.includes('@resend.dev')) {
+  console.warn('⚠️  [Email Config] RESEND_FROM is set to sandbox domain (@resend.dev). Note: Resend sandbox can only send to your account email.');
+}
+
+if (!ORDER_NOTIFICATION_EMAIL) {
+  console.warn('⚠️  [Email Config] ORDER_NOTIFICATION_EMAIL (or EMAIL_USER) not set. Store owner order alerts will be skipped.');
 }
 
 export { MONGODB_URL, PORT, JWT_SECRET, JWT_EXPIRES_IN };

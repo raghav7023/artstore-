@@ -29,6 +29,8 @@ import orderRoutes from "./src/routes/order.routes.js";
 import paymentRoutes from "./src/routes/payment.routes.js";
 import customOrderRoutes from './src/routes/customOrder.routes.js';
 import productRoutes from './src/routes/product.routes.js';
+import adminRoutes from './src/routes/admin.routes.js';
+import { handleResendWebhook } from './src/controllers/resendWebhook.controller.js';
 
 // ==========================================
 // Express App Banao
@@ -150,6 +152,8 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api", paymentRoutes);
 app.use('/api/custom-orders', customOrderRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/admin', adminRoutes);
+app.post('/api/webhooks/resend', handleResendWebhook);
 
 // ==========================================
 // Serve frontend static files when built (local production test)

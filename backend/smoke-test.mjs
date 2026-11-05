@@ -1,7 +1,10 @@
 import http from 'http';
 import crypto from 'crypto';
 import mongoose from 'mongoose';
+import jwt from 'jsonwebtoken';
 import { MONGODB_URL, RAZORPAY_KEY_SECRET, JWT_SECRET } from './Config.mjs';
+import User from './src/models/User.model.js';
+import EmailLog from './src/models/EmailLog.model.js';
 
 const API_BASE = 'http://localhost:2026';
 const jsonHeaders = { 'Content-Type': 'application/json' };
@@ -517,8 +520,237 @@ const run = async () => {
   console.log(`Webhook successfully processed and order created: ${webhookResp.data.orderId || 'OK'}`);
   console.log('✅ Test 15 Passed: Server-to-server webhook verified and orders confirmed automatically.\n');
 
+  // ==========================================
+  // TEST 16: Admin Endpoint Authorization Protection
+  // ==========================================
+  console.log('--- Test 16: Admin Endpoint Security & Role-Based Access Control ---');
+  // 16a: Unauthenticated access
+  const unauthResp = await request(`${API_BASE}/api/admin/dashboard`);
+  if (unauthResp.status !== 401) {
+    throw new Error(`Expected 401 Unauthorized for missing admin token, got: ${unauthResp.status}`);
+  }
+  console.log('Unauthenticated request to /api/admin/dashboard correctly rejected with 401');
+
+  // 16b: Customer attempting admin access
+  const customerAdminAttempt = await request(`${API_BASE}/api/admin/dashboard`, {
+    headers: { Authorization: `Bearer ${tokenA}` },
+  });
+  if (customerAdminAttempt.status !== 403) {
+    throw new Error(`Expected 403 Forbidden for customer accessing admin route, got: ${customerAdminAttempt.status}`);
+  }
+  console.log('Customer token attempting /api/admin/dashboard correctly rejected with 403 Forbidden');
+
+  const customerUserListAttempt = await request(`${API_BASE}/api/admin/users`, {
+    headers: { Authorization: `Bearer ${tokenA}` },
+  });
+  if (customerUserListAttempt.status !== 403) {
+    throw new Error(`Expected 403 Forbidden for customer accessing /api/admin/users, got: ${customerUserListAttempt.status}`);
+  }
+  console.log('Customer token attempting /api/admin/users correctly rejected with 403 Forbidden');
+  console.log('✅ Test 16 Passed: Admin routes strictly secured with 401 and 403 guards.\n');
+
+  // ==========================================
+  // TEST 17: Admin Access with Role Verification
+  // ==========================================
+  console.log('--- Test 17: Admin Access & Dashboard Statistics API ---');
+  const adminUser = await User.create({
+    name: 'Admin Commander',
+    email: `admin_${timestamp}@artstore.internal`,
+    password: 'HashedPassword123',
+    role: 'admin',
+    status: 'active',
+  });
+  const adminToken = jwt.sign({ id: adminUser._id, role: 'admin' }, JWT_SECRET, { expiresIn: '1h' });
+  const adminHeaders = {
+    'Content-Type': 'application/json',
+    Authorization: `Bearer ${adminToken}`,
+  };
+
+  const dashboardResp = await request(`${API_BASE}/api/admin/dashboard`, { headers: adminHeaders });
+  if (!dashboardResp.ok || !dashboardResp.data?.success || !dashboardResp.data?.stats) {
+    throw new Error(`Failed to fetch admin dashboard: ${JSON.stringify(dashboardResp.data)}`);
+  }
+  const stats = dashboardResp.data.stats;
+  console.log(`Admin Dashboard Stats -> Users: ${stats.totalUsers}, Orders: ${stats.totalOrders}, Revenue: ₹${stats.totalRevenue}, Products: ${stats.totalProducts}`);
+
+  const settingsResp = await request(`${API_BASE}/api/admin/settings`, { headers: adminHeaders });
+  if (!settingsResp.ok || !settingsResp.data?.success || !settingsResp.data?.settings) {
+    throw new Error(`Failed to fetch admin settings: ${JSON.stringify(settingsResp.data)}`);
+  }
+  console.log(`System Diagnostics -> Email Provider: ${settingsResp.data.settings.emailService?.provider}, DB State: ${settingsResp.data.settings.system?.databaseState}`);
+
+  const adminProductsResp = await request(`${API_BASE}/api/admin/products`, { headers: adminHeaders });
+  if (!adminProductsResp.ok || !adminProductsResp.data?.success || !adminProductsResp.data?.products?.length) {
+    throw new Error(`Failed to fetch admin products: ${JSON.stringify(adminProductsResp.data)}`);
+  }
+  console.log(`Admin Products -> Catalog Items: ${adminProductsResp.data.products.length}`);
+  console.log('✅ Test 17 Passed: Admin authorized access, real dashboard statistics & diagnostics verified.\n');
+
+  // ==========================================
+  // TEST 18: User Management & Account Deactivation
+  // ==========================================
+  console.log('--- Test 18: User Management & Account Activation/Deactivation ---');
+  const userListResp = await request(`${API_BASE}/api/admin/users?search=Customer+Alpha`, { headers: adminHeaders });
+  if (!userListResp.ok || !userListResp.data?.users?.length) {
+    throw new Error('Failed to search users in admin API');
+  }
+  console.log(`User list returned ${userListResp.data.users.length} match for Customer Alpha`);
+
+  const userDetailResp = await request(`${API_BASE}/api/admin/users/${userAId}`, { headers: adminHeaders });
+  if (!userDetailResp.ok || !userDetailResp.data?.user) {
+    throw new Error('Failed to retrieve user detail');
+  }
+  console.log(`User Detail -> Name: ${userDetailResp.data.user.name}, Total Orders: ${userDetailResp.data.user.totalOrders}`);
+
+  // Deactivate User A
+  const deactResp = await request(`${API_BASE}/api/admin/users/${userAId}/status`, {
+    method: 'PATCH',
+    headers: adminHeaders,
+    body: JSON.stringify({ status: 'inactive' }),
+  });
+  if (!deactResp.ok || !deactResp.data?.success) {
+    throw new Error(`Failed to deactivate user: ${JSON.stringify(deactResp.data)}`);
+  }
+  console.log(`User A account deactivated successfully.`);
+
+  // Attempt login with deactivated user
+  const deactLogin = await request(`${API_BASE}/api/auth/signin`, {
+    method: 'POST',
+    headers: jsonHeaders,
+    body: JSON.stringify({ email: userAEmail, password: 'Password123' }),
+  });
+  if (deactLogin.status !== 403) {
+    throw new Error(`Expected 403 for deactivated user login, got: ${deactLogin.status}`);
+  }
+  console.log(`Deactivated user login properly blocked with 403: "${deactLogin.data.message}"`);
+
+  // Reactivate User A
+  const reactResp = await request(`${API_BASE}/api/admin/users/${userAId}/status`, {
+    method: 'PATCH',
+    headers: adminHeaders,
+    body: JSON.stringify({ status: 'active' }),
+  });
+  if (!reactResp.ok || !reactResp.data?.success) {
+    throw new Error('Failed to reactivate user');
+  }
+  console.log(`User A account reactivated successfully.`);
+  console.log('✅ Test 18 Passed: User management & account activation/deactivation verified.\n');
+
+  // ==========================================
+  // TEST 19: Order Management & Status Updates
+  // ==========================================
+  console.log('--- Test 19: Order Management & Status Updates ---');
+  const adminOrdersResp = await request(`${API_BASE}/api/admin/orders`, { headers: adminHeaders });
+  if (!adminOrdersResp.ok || !adminOrdersResp.data?.orders?.length) {
+    throw new Error('Failed to fetch admin orders');
+  }
+  console.log(`Total orders retrieved: ${adminOrdersResp.data.orders.length}`);
+
+  const singleOrderLookup = await request(`${API_BASE}/api/admin/orders/${qrConfirmedOrder._id}`, { headers: adminHeaders });
+  if (!singleOrderLookup.ok || !singleOrderLookup.data?.order) {
+    throw new Error('Failed to fetch single order detail');
+  }
+  console.log(`Order Lookup: #${singleOrderLookup.data.order._id}, Status: ${singleOrderLookup.data.order.status}`);
+
+  // Update status to 'Shipped'
+  const updateStatusResp = await request(`${API_BASE}/api/admin/orders/${qrConfirmedOrder._id}/status`, {
+    method: 'PATCH',
+    headers: adminHeaders,
+    body: JSON.stringify({ status: 'Shipped' }),
+  });
+  if (!updateStatusResp.ok || updateStatusResp.data?.order?.status !== 'Shipped') {
+    throw new Error(`Failed to update order status: ${JSON.stringify(updateStatusResp.data)}`);
+  }
+  console.log(`Order #${qrConfirmedOrder._id} status updated to: ${updateStatusResp.data.order.status}`);
+  console.log('✅ Test 19 Passed: Order management and lifecycle status updates verified.\n');
+
+  // ==========================================
+  // TEST 20: Payment Attempts & Email Delivery Logs
+  // ==========================================
+  console.log('--- Test 20: Payment History & Email Audit Logs ---');
+  const adminPaymentsResp = await request(`${API_BASE}/api/admin/payments`, { headers: adminHeaders });
+  if (!adminPaymentsResp.ok || !adminPaymentsResp.data?.payments?.length) {
+    throw new Error('Failed to fetch admin payments');
+  }
+  console.log(`Total payments retrieved: ${adminPaymentsResp.data.payments.length}`);
+
+  const adminEmailsResp = await request(`${API_BASE}/api/admin/emails`, { headers: adminHeaders });
+  if (!adminEmailsResp.ok || !adminEmailsResp.data?.emails) {
+    throw new Error('Failed to fetch admin emails');
+  }
+  console.log(`Total email delivery logs retrieved: ${adminEmailsResp.data.emails.length}`);
+  console.log('✅ Test 20 Passed: Payment history and email audit logs retrieved successfully.\n');
+
+  // ==========================================
+  // TEST 21: Email Retry Capability & Safeguards
+  // ==========================================
+  console.log('--- Test 21: Email Retry Capability & Safeguards ---');
+  const mockFailedEmail = await EmailLog.create({
+    recipient: userAEmail,
+    recipientName: 'Customer Alpha',
+    emailType: 'order_confirmation_customer',
+    subject: 'Order Confirmation - Retry Test',
+    relatedOrder: qrConfirmedOrder._id,
+    status: 'failed',
+    attemptCount: 1,
+    maxAttempts: 3,
+    errorMessage: 'Simulated network timeout',
+  });
+
+  const retryResp = await request(`${API_BASE}/api/admin/emails/${mockFailedEmail._id}/retry`, {
+    method: 'POST',
+    headers: adminHeaders,
+  });
+  if (!retryResp.ok || !retryResp.data?.success) {
+    throw new Error(`Email retry failed: ${JSON.stringify(retryResp.data)}`);
+  }
+  console.log(`Email retry completed with status: ${retryResp.data.emailLog?.status}`);
+  console.log('✅ Test 21 Passed: Admin manual email retry verified with safeguards.\n');
+
+  // ==========================================
+  // TEST 22: Resend Delivery Webhook Ingestion
+  // ==========================================
+  console.log('--- Test 22: Resend Webhook Ingestion ---');
+  const mockWebhookLog = await EmailLog.create({
+    recipient: 'delivered_user@example.com',
+    recipientName: 'Delivered User',
+    emailType: 'order_confirmation_customer',
+    subject: 'Order Confirmation - Webhook Test',
+    provider: 'resend',
+    providerMessageId: `msg_resend_hook_${Date.now()}`,
+    status: 'sent',
+    attemptCount: 1,
+    maxAttempts: 3,
+  });
+
+  const resendHookResp = await request(`${API_BASE}/api/webhooks/resend`, {
+    method: 'POST',
+    headers: jsonHeaders,
+    body: JSON.stringify({
+      type: 'email.delivered',
+      created_at: new Date().toISOString(),
+      data: {
+        email_id: mockWebhookLog.providerMessageId,
+        from: 'Art Store <orders@artstorestudio.com>',
+        to: ['delivered_user@example.com'],
+        subject: 'Order Confirmation - Webhook Test',
+      },
+    }),
+  });
+
+  if (!resendHookResp.ok || !resendHookResp.data?.success) {
+    throw new Error(`Resend webhook failed: ${JSON.stringify(resendHookResp.data)}`);
+  }
+
+  const updatedHookLog = await EmailLog.findById(mockWebhookLog._id);
+  if (updatedHookLog.status !== 'delivered') {
+    throw new Error(`Expected EmailLog status to be 'delivered', got: ${updatedHookLog.status}`);
+  }
+  console.log(`Resend webhook processed: EmailLog #${mockWebhookLog._id} updated to 'delivered'`);
+  console.log('✅ Test 22 Passed: Resend webhook event processing verified.\n');
+
   console.log('====================================================');
-  console.log('🎉 ALL 15 END-TO-END SYSTEM TESTS PASSED SUCCESSFULLY!');
+  console.log('🎉 ALL 22 END-TO-END SYSTEM TESTS PASSED SUCCESSFULLY!');
   console.log('====================================================');
   process.exit(0);
 };

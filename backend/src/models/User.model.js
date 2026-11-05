@@ -57,6 +57,18 @@ const userSchema = new mongoose.Schema(
       enum: ['user', 'admin'], // Sirf ye 2 values allowed hain
       default: 'user',         // Default role = user
     },
+
+    // User status: 'active' ya 'inactive'
+    status: {
+      type: String,
+      enum: ['active', 'inactive'],
+      default: 'active',
+    },
+
+    // Last successful login timestamp
+    lastLoginAt: {
+      type: Date,
+    },
   },
   {
     // timestamps: true automatically 2 fields add karta hai:
