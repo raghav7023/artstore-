@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import Navbar from '../Navbar/Navbar.jsx';
 import './Cart.css';
 import { useNavigate } from "react-router-dom";
+import { getDeliveryCharge } from '../../config/delivery.js';
+
 export default function Cart() {
   const navigate = useNavigate();
 
@@ -14,7 +16,7 @@ export default function Cart() {
 
     const updated = cartItems.map(item =>
       item.id === id
-        ? { ...item, quantity: item.quantity + 1 }
+        ? { ...item, quantity: Math.min(100, item.quantity + 1) }
         : item
     );
 
@@ -45,14 +47,16 @@ export default function Cart() {
     localStorage.setItem("cart", JSON.stringify(updated));
   };
 
-  // Total
+  // Subtotal — sum of price × quantity for all items
   const subtotal = cartItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
   );
 
-  const delivery = subtotal > 0 ? 50 : 0;
+  // Delivery — highest applicable charge across all categories (once per order)
+  const delivery = getDeliveryCharge(cartItems);
 
+  // Total = subtotal + delivery
   const total = subtotal + delivery;
 
   return (
@@ -102,7 +106,6 @@ export default function Cart() {
                   <p className="item-price">
                     ₹{item.price}
                   </p>
-
                   <div className="quantity">
 
                     <button
@@ -153,9 +156,8 @@ export default function Cart() {
 
           <div className="summary-row">
             <span>Delivery</span>
-            <span>
-              {delivery === 0 ? "Free" : `₹${delivery}`}
-            </span>
+            {/* Highest delivery charge across all product categories — charged once */}
+            <span>{delivery === 0 ? 'Free' : `₹${delivery}`}</span>
           </div>
 
           <div className="summary-row total">

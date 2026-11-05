@@ -6,9 +6,11 @@
 // State → API call → JWT save → Redirect
 // ==========================================
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import './Authentication.css';
+
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:2026').replace(/\/+$/, '');
 
 export default function Authentication() {
 
@@ -93,6 +95,10 @@ export default function Authentication() {
         setError('Password must contain at least one number.');
         return false;
       }
+      if (formData.phone.trim() && !/^(?:\+91[\s-]?)?[6-9]\d{9}$/.test(formData.phone.trim())) {
+        setError('Please enter a valid Indian mobile number.');
+        return false;
+      }
     }
 
     if (!formData.email.trim()) {
@@ -128,8 +134,8 @@ export default function Authentication() {
       // URL decide karo
       const url =
         activeTab === "signup"
-          ? "https://artstore-backend.onrender.com/api/auth/signup"
-          : "https://artstore-backend.onrender.com/api/auth/signin";
+          ? `${API_BASE_URL}/api/auth/signup`
+          : `${API_BASE_URL}/api/auth/signin`;
       // Body decide karo
       const body =
         activeTab === 'signup'
@@ -165,11 +171,14 @@ export default function Authentication() {
           navigate('/');
         }, 1500);
       } else {
-        setError(data.message || 'Something went wrong. Please try again.');
+        const errorMessage = data.errors && Array.isArray(data.errors) && data.errors.length > 0
+          ? data.errors.map((e) => e.msg).join(', ')
+          : (data.message || 'Something went wrong. Please try again.');
+        setError(errorMessage);
       }
     } catch (err) {
       console.error('Auth Error:', err);
-      setError('Cannot connect to server. Please make sure the backend is running on port 2026.');
+      setError('Cannot connect to the server. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -314,7 +323,7 @@ export default function Authentication() {
             <div className="form-group">
               <label className="form-label" htmlFor="phone">
                 Mobile Number{' '}
-                <span style={{ color: '#c5b8b4', fontWeight: 400 }}>(optional)</span>
+                <span style={{ color: '#c5b8b4', fontWeight: 400 }}></span>
               </label>
               <input
                 className="form-input"

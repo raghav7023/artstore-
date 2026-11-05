@@ -48,7 +48,7 @@
   border-radius: 50%; /* Circle */
   background: radial-gradient(
     circle,
-    rgba(212, 99, 106, 0.08) 0%,
+    rgba(47, 91, 211, 0.08) 0%,
     transparent 70%
   );
   top: -150px;
@@ -90,7 +90,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-full); /* Pill shape */
   font-size: 0.85rem;
-  color: var(--pink);
+  color: #2F5BD3;
   font-weight: 500;
   margin-bottom: 24px;
   box-shadow: var(--shadow-sm);
@@ -117,12 +117,12 @@
 
 /* Pink highlighted word */
 .hero-title span {
-  color: var(--pink);
+  color: #2F5BD3;;
   position: relative;
 
   /* Underline decoration */
   text-decoration: underline;
-  text-decoration-color: rgba(212, 99, 106, 0.3);
+  text-decoration-color: rgba(47, 91, 211, 0.3);
   text-underline-offset: 6px;
 }
 
@@ -148,7 +148,7 @@
 /* Primary button (filled) */
 .hero-btn-primary {
   padding: 14px 32px;
-  background: var(--pink);
+background: #2F5BD3;
   color: white;
   border: none;
   border-radius: var(--radius-md);
@@ -159,7 +159,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 4px 15px rgba(212, 99, 106, 0.35);
+  box-shadow: 0 4px 15px rgba(47, 91, 211, 0.35);
 
   /* Smooth hover effect */
   transition: transform var(--speed), box-shadow var(--speed), background var(--speed);
@@ -167,7 +167,7 @@
 
 .hero-btn-primary:hover {
   transform: translateY(-3px); /* Upar uthao */
-  box-shadow: 0 8px 25px rgba(212, 99, 106, 0.45);
+  box-shadow: 0 8px 25px rgba(47, 91, 211, 0.45);
   background: var(--pink-dark);
 }
 

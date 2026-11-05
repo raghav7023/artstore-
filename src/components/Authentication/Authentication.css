@@ -20,9 +20,9 @@
   /* Beautiful soft gradient background */
   background: linear-gradient(
     135deg,
-    #faf0f0 0%,    /* Very light pink */
-    #fdf4ee 40%,   /* Warm peach */
-    #f5f0fa 100%   /* Soft lavender */
+    #edf3ff 0%,    /* Very light blue */
+    #f4f8ff 40%,   /* Soft blue-tinted white */
+    #eef2ff 100%   /* Cool lavender-blue */
   );
   
   /* Background pattern for artistic feel */
@@ -37,7 +37,7 @@
   width: 400px;
   height: 400px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(212, 99, 106, 0.12) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(47, 91, 211, 0.12) 0%, transparent 70%);
   top: -100px;
   right: -100px;
   pointer-events: none; /* Click events block nahi karega */
@@ -69,7 +69,7 @@
   border-radius: 28px;
   padding: 40px 36px;
   box-shadow: 
-    0 8px 32px rgba(212, 99, 106, 0.12),  /* Pink shadow */
+    0 8px 32px rgba(47, 91, 211, 0.12),  /* Blue shadow */
     0 2px 8px rgba(0, 0, 0, 0.06);         /* Subtle dark shadow */
   position: relative;
   z-index: 1; /* Decorative circles ke upar */
@@ -198,9 +198,9 @@
 
 /* Focus state - jab user input mein click kare */
 .form-input:focus {
-  border-color: #d4636a;   /* Pink border */
+  border-color: #2F5BD3;   /* Blue border */
   background: white;
-  box-shadow: 0 0 0 4px rgba(212, 99, 106, 0.12); /* Soft glow */
+  box-shadow: 0 0 0 4px rgba(47, 91, 211, 0.12); /* Soft glow */
 }
 
 /* Error state - jab input invalid ho */
@@ -235,7 +235,7 @@
 }
 
 .password-toggle:hover {
-  color: #d4636a;
+  color: #2F5BD3;
 }
 
 /* Password input mein right padding do - button se overlap na ho */
@@ -292,13 +292,13 @@
   letter-spacing: 0.3px;
   
   /* Beautiful gradient button */
-  background: linear-gradient(135deg, #d4636a 0%, #c04a6a 100%);
+  background: linear-gradient(135deg, #2F5BD3 0%, #2349b4 100%);
   color: white;
   border: none;
   cursor: pointer;
   
   transition: all 0.25s ease;
-  box-shadow: 0 4px 15px rgba(212, 99, 106, 0.35);
+  box-shadow: 0 4px 15px rgba(47, 91, 211, 0.35);
   position: relative;
   overflow: hidden;
   margin-top: 4px;
@@ -307,14 +307,14 @@
 /* Hover effect */
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(212, 99, 106, 0.45);
-  background: linear-gradient(135deg, #c85560 0%, #b0405e 100%);
+  box-shadow: 0 6px 20px rgba(47, 91, 211, 0.45);
+  background: linear-gradient(135deg, #214db9 0%, #1c409c 100%);
 }
 
 /* Active/Click effect */
 .btn-primary:active:not(:disabled) {
   transform: translateY(0);
-  box-shadow: 0 2px 8px rgba(212, 99, 106, 0.3);
+  box-shadow: 0 2px 8px rgba(47, 91, 211, 0.3);
 }
 
 /* Disabled state - form submit ho raha hai */
@@ -372,7 +372,7 @@
 
 .auth-footer a,
 .auth-footer button {
-  color: #d4636a;
+  color: #2F5BD3;
   font-weight: 600;
   background: none;
   border: none;
@@ -384,7 +384,7 @@
 
 .auth-footer a:hover,
 .auth-footer button:hover {
-  color: #b54a51;
+  color: #1f46a8;
   text-decoration: underline;
 }
 

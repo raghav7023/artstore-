@@ -2,11 +2,13 @@
 // Hero.jsx — Big Banner Section
 // ==========================================
 
-import React from 'react';
 import { Link } from 'react-router-dom';
 import './Hero.css';
 
 export default function Hero() {
+  // Reuse auth detection from Navbar: stored user in localStorage
+  const user = JSON.parse(localStorage.getItem('artstore_user'));
+
   return (
     <section className="hero">
 
@@ -20,13 +22,15 @@ export default function Hero() {
 
         {/* Big heading */}
         <h1 className="hero-title">
-          Beautiful <span>Crochet Art</span><br />
+          Beautiful <br />
           ~ Handmade Gifts 
         </h1>
 
         {/* Description */}
         <p className="hero-desc">
           Discover our collection of handmade crochet , quilling , hampers & custom gifts. 🌸
+
+         <p></p> Orders are deliverd within 15-20 days
         </p>
 
         {/* Buttons */}
@@ -34,20 +38,22 @@ export default function Hero() {
           <Link to="/products" className="hero-btn-primary">
             🛍️ Shop Now
           </Link>
-          <Link to="/signin" className="hero-btn-secondary">
-            ✨ Join Us
-          </Link>
+          {!user && (
+            <Link to="/signin" className="hero-btn-secondary">
+              ✨ Join Us
+            </Link>
+          )}
         </div>
 
         {/* Stats */}
         <div className="hero-stats">
           <div className="hero-stat">
-            <strong>50+</strong>
+            <strong>80+</strong>
             <span>Products</span>
           </div>
           <div className="hero-stat-divider"></div>
           <div className="hero-stat">
-            <strong>200+</strong>
+            <strong>500+</strong>
             <span>Happy Customers</span>
           </div>
           <div className="hero-stat-divider"></div>

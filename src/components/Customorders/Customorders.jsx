@@ -1,247 +1,64 @@
-import React, { useState } from "react";
 import Navbar from "../Navbar/Navbar";
-import toast from "react-hot-toast";
 import "./Customorders.css";
 
 export default function Customorders() {
-
-    const [formData, setFormData] = useState({
-        name: "",
-        email: "",
-        phone: "",
-        product: "",
-        color: "",
-        budget: "",
-        delivery: "",
-        message: "",
-        image: null,
-    });
-    const [preview, setPreview] = useState(null);
-
-    const handleChange = (e) => {
-
-        const { name, value } = e.target;
-
-        setFormData({
-            ...formData,
-            [name]: value,
-        });
-
-    };
-
-    const handleImage = (e) => {
-
-        setFormData({
-            ...formData,
-            image: e.target.files[0],
-        });
-
-    };
-
-    const handleSubmit = (e) => {
-
-        e.preventDefault();
-
-        toast.success("Custom Order Submitted Successfully 🎉");
-
-        console.log(formData);
-
-        setFormData({
-            name: "",
-            email: "",
-            phone: "",
-            product: "",
-            color: "",
-            budget: "",
-            delivery: "",
-            message: "",
-            image: null,
-        });
-
-    };
+    const instagramUrl = "https://www.instagram.com/artstore_07?stkn=MWJmY294N2d2bWVveA==";
 
     return (
-
         <div className="custom-page">
-
             <Navbar />
 
             <div className="custom-container">
+                <div className="custom-info-box">
+                    <h1 className="custom-title">✨ Looking for something personalized?</h1>
 
-                <div className="custom-header">
-
-                    <h1>✨ Custom Order Request</h1>
-
-                    <p>
-                        Tell us what you want and we'll create a beautiful handmade
-                        product specially for you.
+                    <p className="custom-description">
+                        Place your Custom Order by sending us a DM on Instagram or through the link below. 💌
                     </p>
 
-                </div>
+                    <p className="custom-tagline">
+                        Your idea, beautifully crafted just for you. ❤️
+                    </p>
 
-                <form className="custom-form" onSubmit={handleSubmit}>
+                    <div className="custom-contact-card">
+                        <p className="custom-contact-row">
+                            <span className="contact-icon">📩</span>
+                            <strong>Instagram:</strong>{" "}
+                            <a
+                                href={instagramUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="custom-link custom-ig-username"
+                            >
+                                @artstore_07
+                            </a>
+                        </p>
 
-                    <div className="form-group">
-
-                        <label>Full Name</label>
-
-                        <input
-                            type="text"
-                            name="name"
-                            placeholder="Enter your name"
-                            value={formData.name}
-                            onChange={handleChange}
-                            required
-                        />
-
+                        <p className="custom-contact-row">
+                            <span className="contact-icon">🔗</span>{" "}
+                            <a
+                                href={instagramUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="custom-link custom-full-url"
+                            >
+                                https://www.instagram.com/artstore_07?stkn=MWJmY294N2d2bWVveA==
+                            </a>
+                        </p>
                     </div>
 
-                    <div className="form-group">
-
-                        <label>Email</label>
-
-                        <input
-                            type="email"
-                            name="email"
-                            placeholder="Enter your email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            required
-                        />
-
-                    </div>
-
-                    <div className="form-group">
-
-                        <label>Phone Number</label>
-
-                        <input
-                            type="tel"
-                            name="phone"
-                            placeholder="Enter your mobile number"
-                            value={formData.phone}
-                            onChange={handleChange}
-                            required
-                        />
-
-                    </div>
-
-                    <div className="form-group">
-
-                        <label>Product Type</label>
-
-                        <select
-                            name="product"
-                            value={formData.product}
-                            onChange={handleChange}
-                            required
+                    <div className="custom-cta-wrap">
+                        <a
+                            href={instagramUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="custom-cta-btn"
                         >
-
-                            <option value="">Select Product</option>
-
-                            <option>Crochet Flowers</option>
-
-                            <option>Quilling Frame</option>
-
-                            <option>Hamper</option>
-
-                            <option>Greeting Card</option>
-
-                            <option>Keychain</option>
-
-                            <option>Other</option>
-
-                        </select>
-
+                            💌 DM on Instagram
+                        </a>
                     </div>
-                    <div className="form-group">
-
-                        <label>Preferred Color</label>
-
-                        <input
-                            type="text"
-                            name="color"
-                            placeholder="e.g. Pink, White, Blue..."
-                            value={formData.color}
-                            onChange={handleChange}
-                        />
-
-                    </div>
-
-                    <div className="form-group">
-
-                        <label>Budget (₹)</label>
-
-                        <input
-                            type="number"
-                            name="budget"
-                            placeholder="Enter your budget"
-                            value={formData.budget}
-                            onChange={handleChange}
-                        />
-
-                    </div>
-
-                    <div className="form-group">
-
-                        <label>Required Delivery Date</label>
-
-                        <input
-                            type="date"
-                            name="delivery"
-                            value={formData.delivery}
-                            onChange={handleChange}
-                        />
-                        {preview && (
-                            <img
-                                src={preview}
-                                alt="Preview"
-                                className="preview-image"
-                            />
-                        )}
-
-                    </div>
-
-                    <div className="form-group">
-
-                        <label>Reference Image</label>
-
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImage}
-                        />
-
-                    </div>
-
-                    <div className="form-group">
-
-                        <label>Describe Your Order</label>
-
-                        <textarea
-                            rows="5"
-                            name="message"
-                            placeholder="Tell us about your custom order..."
-                            value={formData.message}
-                            onChange={handleChange}
-                            required
-                        />
-
-                    </div>
-
-                    <button
-                        type="submit"
-                        className="submit-btn"
-                    >
-                        🚀 Submit Custom Order
-                    </button>
-
-                </form>
-
+                </div>
             </div>
-
         </div>
-
     );
-
 }

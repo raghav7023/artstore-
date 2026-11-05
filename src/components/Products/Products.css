@@ -111,3 +111,51 @@
     padding: 0 16px 40px;
   }
 }
+/* Crochet Subcategory Navigation */
+
+.subcategory-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 20px auto 30px;
+  padding: 12px 20px;
+  max-width: 1000px;
+}
+
+.subcategory-btn {
+  border: 1px solid #ddd;
+  background: #fff;
+  color: #444;
+  padding: 10px 20px;
+  border-radius: 25px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.subcategory-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.subcategory-btn.active {
+  background: #2f5fdb;
+  color: #fff;
+  border-color: #2f5fdb;
+  box-shadow: 0 4px 12px rgba(47, 95, 219, 0.25);
+}
+
+@media (max-width: 600px) {
+  .subcategory-bar {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .subcategory-btn {
+    padding: 8px 14px;
+    font-size: 13px;
+  }
+}

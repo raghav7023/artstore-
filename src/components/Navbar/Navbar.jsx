@@ -2,7 +2,8 @@
 // Navbar.jsx — Top Navigation Bar
 // ==========================================
 
-import React from "react";
+ 
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./Navbar.css";
 
@@ -10,6 +11,7 @@ export default function Navbar() {
 
   // Navigation
   const navigate = useNavigate();
+  const [searchText, setSearchText] = useState('');
 
   // Logged in user
   const user = JSON.parse(localStorage.getItem("artstore_user"));
@@ -31,6 +33,11 @@ export default function Navbar() {
     navigate("/");
   };
 
+  const handleSearch = (event) => {
+    event.preventDefault();
+    navigate('/products', { state: { search: searchText.trim() } });
+  };
+
   return (
     <nav className="navbar">
       <div className="navbar-inner">
@@ -42,19 +49,21 @@ export default function Navbar() {
           </span>
 
           <div className="navbar-logo-text">
-            <span>Art Store</span>
+            {/* <span>Art Store</span> */}
             <span>Handmade with love</span>
           </div>
         </Link>
 
         {/* ====== SEARCH BAR ====== */}
-        <div className="navbar-search">
-          <span className="navbar-search-icon">🔍</span>
+        <form className="navbar-search" onSubmit={handleSearch}>
+          <button type="submit" className="navbar-search-icon" aria-label="Search">🔍</button>
           <input
             type="text"
             placeholder="Search crochet flowers, keychains..."
+            value={searchText}
+            onChange={(event) => setSearchText(event.target.value)}
           />
-        </div>
+        </form>
 
         {/* ====== RIGHT SIDE BUTTONS ====== */}
         <div className="navbar-actions">
@@ -71,9 +80,17 @@ export default function Navbar() {
             <span className="btn-text">Cart</span>
           </Link>
           {user && (
-            <Link to="/admin/orders" className="nav-btn">
+            <Link to="/orders" className="nav-btn">
               <span className="icon">📦</span>
               <span className="btn-text">Orders</span>
+            </Link>
+          )}
+
+          {/* Admin Dashboard - visible only to admin users */}
+          {user && user.role === 'admin' && (
+            <Link to="/admin" className="nav-btn">
+              <span className="icon">📊</span>
+              <span className="btn-text">Admin</span>
             </Link>
           )}
 

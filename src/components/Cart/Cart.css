@@ -226,6 +226,14 @@
   color: var(--text);
 }
 
+/* Small note below subtotal informing about delivery at checkout */
+.delivery-note {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 6px 0 4px;
+  line-height: 1.4;
+}
+
 /* Checkout button */
 .checkout-btn {
   width: 100%;
