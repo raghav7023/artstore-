@@ -222,9 +222,13 @@ export const getAdminOrders = async (req, res) => {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
     const skip = (page - 1) * limit;
-    const search = req.query.search ? req.query.search.trim() : '';
-    const status = req.query.status || '';
-    const payment = req.query.payment || '';
+    const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+    const status = typeof req.query.status === 'string' ? req.query.status : '';
+    const payment = typeof req.query.payment === 'string' ? req.query.payment.trim() : '';
+    const paymentStatus = typeof req.query.paymentStatus === 'string'
+      ? req.query.paymentStatus.toLowerCase()
+      : '';
+    const sortDirection = req.query.sort === 'oldest' ? 1 : -1;
 
     let filter = {};
     if (search) {
@@ -234,12 +238,60 @@ export const getAdminOrders = async (req, res) => {
         { email: searchRegex },
         { phone: searchRegex },
       ];
-      if (/^[0-9a-fA-F]{24}$/.test(search)) {
-        filter.$or.push({ _id: search });
+      if (/^[0-9a-fA-F]{1,24}$/.test(search.replace(/^#/, ''))) {
+        const orderIdSearch = search.replace(/^#/, '');
+        filter.$or.push({
+          $expr: {
+            $regexMatch: {
+              input: { $toString: '$_id' },
+              regex: orderIdSearch,
+              options: 'i',
+            },
+          },
+        });
       }
     }
     if (status) filter.status = status;
-    if (payment) filter.payment = new RegExp(payment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    if (payment) {
+      filter.payment = new RegExp(payment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    }
+
+    if (paymentStatus) {
+      const attemptStatus = {
+        paid: 'paid',
+        pending: 'created',
+        failed: 'failed',
+      }[paymentStatus];
+      if (!attemptStatus) {
+        return res.status(400).json({
+          success: false,
+          message: 'Payment status must be Paid, Pending, or Failed.',
+        });
+      }
+
+      const matchingOrderIds = await PaymentAttempt.distinct('razorpay_order_id', {
+        status: attemptStatus,
+      });
+      const paymentFilter = paymentStatus === 'paid'
+        ? {
+          $or: [
+            { 'razorpay.order_id': { $in: matchingOrderIds } },
+            { 'razorpay.payment_id': { $exists: true, $ne: '' } },
+          ],
+        }
+        : paymentStatus === 'pending'
+          ? {
+            $or: [
+              { 'razorpay.order_id': { $in: matchingOrderIds } },
+              { 'razorpay.order_id': { $exists: false }, payment: /cash on delivery|cod/i },
+            ],
+          }
+          : { 'razorpay.order_id': { $in: matchingOrderIds } };
+
+      filter = Object.keys(filter).length
+        ? { $and: [filter, paymentFilter] }
+        : paymentFilter;
+    }
 
     // Date filter
     if (req.query.fromDate || req.query.toDate) {
@@ -249,13 +301,35 @@ export const getAdminOrders = async (req, res) => {
     }
 
     const [orders, total] = await Promise.all([
-      Order.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+      Order.find(filter).sort({ createdAt: sortDirection }).skip(skip).limit(limit).lean(),
       Order.countDocuments(filter),
     ]);
 
+    const razorpayOrderIds = orders
+      .map((order) => order.razorpay?.order_id)
+      .filter(Boolean);
+    const paymentAttempts = razorpayOrderIds.length
+      ? await PaymentAttempt.find({ razorpay_order_id: { $in: razorpayOrderIds } })
+        .select('razorpay_order_id status')
+        .lean()
+      : [];
+    const paymentStatusByOrderId = new Map(
+      paymentAttempts.map((attempt) => [attempt.razorpay_order_id, attempt.status])
+    );
+    const ordersWithPaymentStatus = orders.map((order) => {
+      const attemptStatus = paymentStatusByOrderId.get(order.razorpay?.order_id);
+      const paymentStatus = attemptStatus === 'paid' || order.razorpay?.payment_id
+        ? 'Paid'
+        : attemptStatus === 'failed'
+          ? 'Failed'
+          : 'Pending';
+
+      return { ...order, state: order.state || '', paymentStatus };
+    });
+
     res.status(200).json({
       success: true,
-      orders,
+      orders: ordersWithPaymentStatus,
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
   } catch (error) {
@@ -274,10 +348,15 @@ export const getOrderById = async (req, res) => {
       EmailLog.find({ relatedOrder: order._id }).sort({ createdAt: -1 }).lean(),
       PaymentAttempt.findOne({ razorpay_order_id: order.razorpay?.order_id }).lean(),
     ]);
+    const paymentStatus = payment?.status === 'paid' || order.razorpay?.payment_id
+      ? 'Paid'
+      : payment?.status === 'failed'
+        ? 'Failed'
+        : 'Pending';
 
     res.status(200).json({
       success: true,
-      order,
+      order: { ...order, state: order.state || '', paymentStatus },
       emailLogs,
       payment,
     });
@@ -291,7 +370,15 @@ export const getOrderById = async (req, res) => {
 export const updateOrderStatus = async (req, res) => {
   try {
     const { status } = req.body;
-    const validStatuses = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
+    const validStatuses = [
+      'Pending',
+      'Processing',
+      'Confirmed',
+      'Shipped',
+      'Out for Delivery',
+      'Delivered',
+      'Cancelled',
+    ];
     if (!status || !validStatuses.includes(status)) {
       return res.status(400).json({ success: false, message: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
     }

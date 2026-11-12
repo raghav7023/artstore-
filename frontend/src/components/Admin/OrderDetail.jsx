@@ -92,7 +92,20 @@ export default function OrderDetail() {
 
   if (!order) return null;
 
-  const statuses = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
+  const statuses = [
+    'Pending',
+    'Processing',
+    'Confirmed',
+    'Shipped',
+    'Out for Delivery',
+    'Delivered',
+    'Cancelled',
+  ];
+  const subtotal = order.products?.reduce(
+    (sum, product) => sum + (Number(product.price) || 0) * (Number(product.quantity) || 0),
+    0
+  ) || 0;
+  const delivery = Math.max(0, (Number(order.total) || 0) - subtotal);
 
   return (
     <div className="admin-page">
@@ -103,7 +116,7 @@ export default function OrderDetail() {
           <h2>Order #{order._id?.slice(-8)}</h2>
           <p className="cell-subtext">Database ID: {order._id}</p>
         </div>
-        <span className={`status-badge status-${order.status?.toLowerCase()}`}>
+        <span className={`status-badge status-${order.status?.toLowerCase().replace(/ /g, '-')}`}>
           {order.status}
         </span>
       </div>
@@ -111,18 +124,15 @@ export default function OrderDetail() {
       {/* Status Update */}
       <div className="status-update-section">
         <label>Update Status:</label>
-        <div className="status-buttons">
-          {statuses.map((s) => (
-            <button
-              key={s}
-              className={`status-btn ${order.status === s ? 'active' : ''}`}
-              disabled={updatingStatus || order.status === s}
-              onClick={() => handleStatusUpdate(s)}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
+        <select
+          className="admin-status-select"
+          value={order.status || 'Pending'}
+          disabled={updatingStatus}
+          onChange={(event) => handleStatusUpdate(event.target.value)}
+          aria-label="Update order status"
+        >
+          {statuses.map((status) => <option key={status} value={status}>{status}</option>)}
+        </select>
       </div>
 
       <div className="detail-grid">
@@ -143,7 +153,7 @@ export default function OrderDetail() {
             </div>
             <div>
               <label>Shipping Address</label>
-              <p>{order.address}, {order.city} - {order.pincode}</p>
+              <p>{order.address}, {order.city}{order.state ? `, ${order.state}` : ''} - {order.pincode}</p>
             </div>
           </div>
         </div>
@@ -154,6 +164,14 @@ export default function OrderDetail() {
             <div>
               <label>Method</label>
               <p>{order.payment || 'Razorpay'}</p>
+            </div>
+            <div>
+              <label>Payment Status</label>
+              <p>
+                <span className={`status-badge status-${order.paymentStatus?.toLowerCase() || 'pending'}`}>
+                  {order.paymentStatus || 'Pending'}
+                </span>
+              </p>
             </div>
             <div>
               <label>Total Amount</label>
@@ -196,15 +214,18 @@ export default function OrderDetail() {
             <thead>
               <tr>
                 <th>Product</th>
-                <th>Qty</th>
-                <th>Price</th>
-                <th>Total</th>
+                <th>Quantity</th>
+                <th>Unit price</th>
+                <th>Line total</th>
               </tr>
             </thead>
             <tbody>
               {order.products?.map((p, i) => (
                 <tr key={i}>
-                  <td><strong>{p.name}</strong></td>
+                  <td className="order-detail-product">
+                    <img src={p.image || '/artstore_logo.jpeg'} alt={p.name} />
+                    <strong>{p.name}</strong>
+                  </td>
                   <td>{p.quantity}</td>
                   <td>₹{(p.price || 0).toLocaleString('en-IN')}</td>
                   <td><strong>₹{((p.price || 0) * (p.quantity || 1)).toLocaleString('en-IN')}</strong></td>
@@ -212,6 +233,11 @@ export default function OrderDetail() {
               ))}
             </tbody>
           </table>
+        </div>
+        <div className="order-totals">
+          <p><span>Subtotal</span><strong>₹{subtotal.toLocaleString('en-IN')}</strong></p>
+          <p><span>Delivery</span><strong>₹{delivery.toLocaleString('en-IN')}</strong></p>
+          <p className="order-final-total"><span>Final amount</span><strong>₹{(Number(order.total) || 0).toLocaleString('en-IN')}</strong></p>
         </div>
       </div>
 

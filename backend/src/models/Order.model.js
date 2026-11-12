@@ -35,6 +35,11 @@ const orderSchema = new mongoose.Schema(
             required: true,
         },
 
+        state: {
+            type: String,
+            default: "",
+        },
+
         pincode: {
             type: String,
             required: true,
@@ -68,7 +73,15 @@ const orderSchema = new mongoose.Schema(
         // Order Status
         status: {
             type: String,
-            enum: ["Pending", "Processing", "Shipped", "Delivered", "Cancelled"],
+            enum: [
+                "Pending",
+                "Processing",
+                "Confirmed",
+                "Shipped",
+                "Out for Delivery",
+                "Delivered",
+                "Cancelled",
+            ],
             default: "Pending",
         },
         // Razorpay payment details (optional)

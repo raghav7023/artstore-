@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import Navbar from "../Navbar/Navbar";
@@ -19,8 +19,9 @@ export default function AdminOrders() {
             return null;
         }
     })();
+    const userRole = user?.role;
 
-    const fetchOrders = async () => {
+    const fetchOrders = useCallback(async () => {
         try {
             setError('');
             const token = localStorage.getItem("artstore_token");
@@ -59,9 +60,14 @@ export default function AdminOrders() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [navigate]);
 
     useEffect(() => {
+        if (userRole === "admin") {
+            navigate("/admin/orders", { replace: true });
+            return;
+        }
+
         const token = localStorage.getItem("artstore_token");
         if (!token) {
             navigate("/signin");
@@ -69,8 +75,11 @@ export default function AdminOrders() {
         }
         if (hasFetchedOrders.current) return;
         hasFetchedOrders.current = true;
-        fetchOrders();
-    }, [navigate]);
+        const loadOrders = async () => {
+            await fetchOrders();
+        };
+        loadOrders();
+    }, [fetchOrders, navigate, userRole]);
 
     return (
         <div className="admin-orders-page">

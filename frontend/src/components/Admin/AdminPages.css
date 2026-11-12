@@ -219,6 +219,120 @@
   text-overflow: ellipsis;
 }
 
+.order-filter-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.order-filter-controls label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-light, #6b5c57);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.order-filter-controls select,
+.admin-status-select {
+  min-height: 38px;
+  padding: 7px 10px;
+  border: 1px solid var(--border, #e8e0d8);
+  border-radius: var(--radius-sm, 8px);
+  background: var(--bg-card, #ffffff);
+  color: var(--text, #2d2420);
+  font: inherit;
+}
+
+.admin-status-select:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.order-id-cell {
+  max-width: 190px;
+  overflow-wrap: anywhere;
+}
+
+.order-contact {
+  display: block;
+  margin-top: 4px;
+}
+
+.order-address-cell {
+  min-width: 190px;
+  max-width: 260px;
+  white-space: normal;
+}
+
+.order-management-table {
+  min-width: 1500px;
+}
+
+.order-items-cell {
+  display: grid;
+  gap: 10px;
+  min-width: 220px;
+}
+
+.order-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.order-item img,
+.order-detail-product img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.order-item strong,
+.order-item small {
+  display: block;
+}
+
+.order-item small {
+  margin-top: 3px;
+  color: var(--text-muted, #9e8e89);
+}
+
+.order-management-table .status-badge {
+  display: block;
+  width: fit-content;
+  margin-top: 7px;
+}
+
+.order-detail-product {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 220px;
+}
+
+.order-totals {
+  width: min(100%, 340px);
+  margin: 18px 0 0 auto;
+}
+
+.order-totals p {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 7px 0;
+}
+
+.order-final-total {
+  border-top: 1px solid var(--border, #e8e0d8);
+  margin-top: 5px;
+  padding-top: 12px !important;
+  font-size: 1.05rem;
+}
+
 .subject-cell {
   max-width: 260px;
   white-space: nowrap;
@@ -262,7 +376,9 @@
 
 .status-badge.status-pending { background: #fef3c7; color: #b45309; }
 .status-badge.status-processing { background: #dbeafe; color: #1d4ed8; }
+.status-badge.status-confirmed { background: #ede9fe; color: #6d28d9; }
 .status-badge.status-shipped { background: #e0e7ff; color: #4338ca; }
+.status-badge.status-out-for-delivery { background: #ffedd5; color: #c2410c; }
 .status-badge.status-delivered { background: #d1fae5; color: #047857; }
 .status-badge.status-cancelled { background: #fee2e2; color: #b91c1c; }
 .status-badge.status-sent { background: #d1fae5; color: #047857; }
@@ -624,6 +740,7 @@
     flex-direction: column;
     align-items: flex-start;
   }
+}
 
 /* ===== MODAL DIALOG ===== */
 .admin-modal-overlay {

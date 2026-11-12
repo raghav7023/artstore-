@@ -63,25 +63,11 @@ export const getOrders = async (req, res) => {
 
     try {
 
-        let orders;
-
-        if (req.user.role === "admin") {
-
-            // Admin -> sabke orders
-            orders = await Order.find().sort({
-                createdAt: -1,
-            });
-
-        } else {
-
-            // User -> sirf apne orders
-            orders = await Order.find({
-                user: req.user.id,
-            }).sort({
-                createdAt: -1,
-            });
-
-        }
+        const orders = await Order.find({
+            user: req.user.id,
+        }).sort({
+            createdAt: -1,
+        });
 
         res.status(200).json({
             success: true,

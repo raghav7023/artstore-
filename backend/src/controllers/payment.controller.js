@@ -66,6 +66,7 @@ export const createPaymentOrder = async (req, res) => {
       phone,
       address,
       city,
+      state,
       pincode,
       payment, // payment method selected
       products,
@@ -126,7 +127,15 @@ export const createPaymentOrder = async (req, res) => {
         amount: amountInPaise,
         currency: currency || 'INR',
         products: orderProducts.length > 0 ? orderProducts : (products || []),
-        customer: { name: name || '', email: email || '', phone: phone || '', address: address || '', city: city || '', pincode: pincode || '' },
+        customer: {
+          name: name || '',
+          email: email || '',
+          phone: phone || '',
+          address: address || '',
+          city: city || '',
+          state: state || '',
+          pincode: pincode || '',
+        },
         status: 'created',
       });
     }
@@ -242,6 +251,7 @@ export const verifyPayment = async (req, res) => {
       phone: attempt.customer?.phone || 'N/A',
       address: attempt.customer?.address || 'N/A',
       city: attempt.customer?.city || 'N/A',
+      state: attempt.customer?.state || '',
       pincode: attempt.customer?.pincode || 'N/A',
       payment: 'Razorpay',
       products: attempt.products || [],
@@ -384,6 +394,7 @@ export const handleRazorpayWebhook = async (req, res) => {
             phone: attempt.customer?.phone || 'N/A',
             address: attempt.customer?.address || 'N/A',
             city: attempt.customer?.city || 'N/A',
+            state: attempt.customer?.state || '',
             pincode: attempt.customer?.pincode || 'N/A',
             payment: paymentMethodDetail,
             products: attempt.products || [],

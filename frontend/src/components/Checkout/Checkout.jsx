@@ -37,6 +37,7 @@ export default function Checkout() {
         phone: savedUser.phone || '',
         address: '',
         city: '',
+        state: '',
         pincode: '',
         payment: 'Razorpay',
     });
@@ -87,6 +88,7 @@ export default function Checkout() {
         const trimmedPhone = formData.phone.trim();
         const trimmedAddress = formData.address.trim();
         const trimmedCity = formData.city.trim();
+        const trimmedState = formData.state.trim();
         const trimmedPincode = formData.pincode.trim();
 
         if (!trimmedName || trimmedName.length < 2) {
@@ -107,6 +109,10 @@ export default function Checkout() {
         }
         if (!trimmedCity) {
             toast.error('Please enter your city');
+            return;
+        }
+        if (!trimmedState) {
+            toast.error('Please enter your state');
             return;
         }
         if (!trimmedPincode || !/^\d{6}$/.test(trimmedPincode)) {
@@ -131,6 +137,7 @@ export default function Checkout() {
                 phone: trimmedPhone,
                 address: trimmedAddress,
                 city: trimmedCity,
+                state: trimmedState,
                 pincode: trimmedPincode,
                 products: cartItems,
                 payment: 'Razorpay',
@@ -290,6 +297,11 @@ export default function Checkout() {
                         <div className="form-group">
                             <label>City</label>
                             <input type="text" name="city" placeholder="Enter city" value={formData.city} onChange={handleChange} required />
+                        </div>
+
+                        <div className="form-group">
+                            <label>State</label>
+                            <input type="text" name="state" placeholder="Enter state" value={formData.state} onChange={handleChange} required />
                         </div>
 
                         <div className="form-group">
