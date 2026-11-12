@@ -1,0 +1,183 @@
+/* ==========================================
+   Customorders.css
+   Theme matches Home / Products / Cart
+========================================== */
+
+.custom-page {
+    min-height: 100vh;
+    background: var(--bg);
+}
+
+.custom-container {
+    max-width: 720px;
+    margin: 50px auto;
+    padding: 40px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    animation: fadeUp .5s ease;
+}
+
+.custom-info-box {
+    text-align: center;
+    padding: 10px 0;
+}
+
+.custom-title {
+    font-family: var(--font-heading);
+    color: var(--pink);
+    font-size: 2.1rem;
+    margin-bottom: 20px;
+    line-height: 1.3;
+}
+
+.custom-description {
+    color: var(--text);
+    font-size: 1.15rem;
+    line-height: 1.7;
+    margin-bottom: 16px;
+    max-width: 580px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.custom-tagline {
+    color: var(--text-muted);
+    font-size: 1.05rem;
+    font-weight: 500;
+    margin-bottom: 30px;
+}
+
+/* Contact box */
+.custom-contact-card {
+    background: var(--bg-soft);
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin: 25px auto;
+    max-width: 560px;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.custom-contact-row {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    word-break: break-all;
+    overflow-wrap: anywhere;
+}
+
+.contact-icon {
+    font-size: 1.2rem;
+}
+
+.custom-link {
+    color: var(--pink);
+    text-decoration: none;
+    font-weight: 600;
+    transition: color 0.2s ease, text-decoration 0.2s ease;
+}
+
+.custom-link:hover {
+    color: var(--pink-dark);
+    text-decoration: underline;
+}
+
+.custom-ig-username {
+    font-size: 1.08rem;
+}
+
+.custom-full-url {
+    font-size: 0.92rem;
+}
+
+/* Prominent CTA button */
+.custom-cta-wrap {
+    margin-top: 30px;
+}
+
+.custom-cta-btn {
+    display: inline-block;
+    padding: 14px 34px;
+    background: linear-gradient(135deg, var(--pink), var(--pink-dark));
+    color: #fff;
+    border-radius: var(--radius-full);
+    font-size: 1.05rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.custom-cta-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 22px rgba(47, 91, 211, 0.25);
+    color: #fff;
+}
+
+.custom-cta-btn:active {
+    transform: scale(.98);
+}
+
+/* ==========================================
+   Animation
+========================================== */
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ==========================================
+   Mobile Responsive
+========================================== */
+
+@media (max-width: 768px) {
+    .custom-container {
+        margin: 20px 16px;
+        padding: 28px 20px;
+    }
+
+    .custom-title {
+        font-size: 1.65rem;
+    }
+
+    .custom-description {
+        font-size: 1.02rem;
+    }
+
+    .custom-tagline {
+        font-size: 0.95rem;
+    }
+
+    .custom-contact-card {
+        padding: 18px 16px;
+    }
+
+    .custom-contact-row {
+        font-size: 0.92rem;
+    }
+
+    .custom-full-url {
+        font-size: 0.82rem;
+    }
+
+    .custom-cta-btn {
+        width: 100%;
+        padding: 14px 20px;
+        font-size: 1rem;
+    }
+}
