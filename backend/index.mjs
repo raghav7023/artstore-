@@ -7,6 +7,9 @@
 
 import express from 'express';
 import mongoose from 'mongoose';
+import Order from './src/models/Order.model.js';
+import { assertPaymentOrderIndex } from './src/utils/paymentOrderIndex.utils.js';
+import { startNotificationWorker } from './src/workers/orderNotification.worker.js';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { MONGODB_URL, PORT } from './Config.mjs';
@@ -208,8 +211,11 @@ const startServer = async () => {
     await mongoose.connect(MONGODB_URL);
     console.log("Connected Database:", mongoose.connection.name);
     console.log('✅ MongoDB se connection ho gaya!');
+    await assertPaymentOrderIndex(Order.collection);
+    console.log('✅ Required Razorpay order index is ready.');
 
     // Phir server start karo
+    startNotificationWorker();
     app.listen(PORT, () => {
       console.log(`✅ Server chal raha hai: http://localhost:${PORT}`);
       console.log(`📋 API Docs: http://localhost:${PORT}/api/auth/signup`);

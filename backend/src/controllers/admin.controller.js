@@ -4,6 +4,7 @@ import PaymentAttempt from '../models/PaymentAttempt.model.js';
 import EmailLog from '../models/EmailLog.model.js';
 import AuditLog from '../models/AuditLog.model.js';
 import { sendOrderEmails } from '../utils/emailService.js';
+import { MAX_NOTIFICATION_ATTEMPTS } from '../utils/notificationDelivery.utils.js';
 
 // Helper: Create audit log
 const logAdminAction = async (action, performedBy, targetType, targetId, details = {}, ipAddress = '') => {
@@ -510,6 +511,13 @@ export const retryEmail = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email was already sent successfully. Cannot retry.' });
     }
 
+    if (emailLog.status === 'unknown') {
+      return res.status(409).json({
+        success: false,
+        message: 'Delivery outcome is unknown. Reconcile with the provider before retrying.',
+      });
+    }
+
     if (emailLog.attemptCount >= emailLog.maxAttempts) {
       return res.status(400).json({ success: false, message: `Maximum retry attempts (${emailLog.maxAttempts}) reached.` });
     }
@@ -524,23 +532,57 @@ export const retryEmail = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Related order not found.' });
     }
 
-    // Retry using force flag
-    const emailResult = await sendOrderEmails(order.toObject(), { force: true });
+    // Retry only the selected recipient through the persistent notification claim.
+    const recipient = emailLog.emailType.includes('owner') ? 'owner' : 'customer';
+    const notificationType = recipient === 'owner' ? 'ownerEmail' : 'customerEmail';
+    const notification = order.notifications?.[notificationType];
+    if (notification?.status === 'unknown') {
+      return res.status(409).json({
+        success: false,
+        message: 'Delivery outcome is unknown. Reconcile with the provider before retrying.',
+      });
+    }
+    if (notification?.status === 'sending') {
+      return res.status(409).json({
+        success: false,
+        message: 'This email is already being processed.',
+      });
+    }
+    if (notification?.status === 'sent' || order.emailsSent?.[recipient]) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email was already sent successfully. Cannot retry.',
+      });
+    }
+    if (notification?.attemptCount >= MAX_NOTIFICATION_ATTEMPTS) {
+      return res.status(400).json({
+        success: false,
+        message: `Maximum retry attempts (${MAX_NOTIFICATION_ATTEMPTS}) reached.`,
+      });
+    }
+
+    const emailResult = await sendOrderEmails(order.toObject(), {
+      manualRetry: true,
+      recipient,
+    });
 
     // Update the log entry
-    const retrySuccess = emailLog.emailType.includes('owner')
-      ? emailResult?.owner?.success
-      : emailResult?.customer?.success;
-    const retryError = emailLog.emailType.includes('owner')
-      ? emailResult?.owner?.error
-      : emailResult?.customer?.error;
+    const retryResult = recipient === 'owner' ? emailResult?.owner : emailResult?.customer;
+    if (retryResult?.skipped) {
+      return res.status(409).json({
+        success: false,
+        message: 'Another notification attempt already owns or completed this email.',
+      });
+    }
+
+    const retrySuccess = retryResult?.success;
+    const retryError = retryResult?.error || retryResult?.reason;
 
     emailLog.attemptCount += 1;
     emailLog.lastAttemptAt = new Date();
-    emailLog.status = retrySuccess ? 'sent' : 'failed';
+    emailLog.status = retrySuccess ? 'sent' : retryResult?.outcome === 'unknown' ? 'unknown' : 'failed';
     emailLog.errorMessage = retrySuccess ? '' : (retryError || 'Retry failed');
     if (retrySuccess) {
-      const retryResult = emailLog.emailType.includes('owner') ? emailResult?.owner : emailResult?.customer;
       emailLog.providerMessageId = retryResult?.messageId || '';
       emailLog.provider = retryResult?.provider || 'resend';
     }
@@ -551,8 +593,16 @@ export const retryEmail = async (req, res) => {
       attemptCount: emailLog.attemptCount,
     }, req.ip);
 
+    if (retryResult?.outcome === 'unknown') {
+      return res.status(409).json({
+        success: false,
+        message: 'Delivery outcome is unknown. Reconcile with the provider before retrying.',
+        emailLog,
+      });
+    }
+
     res.status(200).json({
-      success: true,
+      success: Boolean(retrySuccess),
       message: retrySuccess ? 'Email retry successful' : 'Email retry failed',
       emailLog,
     });

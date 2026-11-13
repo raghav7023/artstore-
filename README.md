@@ -1,16 +1,59 @@
-# React + Vite
+# Artstore
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Artstore is a MERN e-commerce application. The backend and frontend each have
+their own package manifest and lockfile.
 
-Currently, two official plugins are available:
+## Project layout
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- `backend/` — Express API, MongoDB models, authentication, orders, payments,
+  and email integrations.
+- `frontend/` — React application, Vite configuration, and static assets.
 
-## React Compiler
+## Run locally
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Install dependencies and start the backend in one terminal:
 
-## Expanding the ESLint configuration
+```sh
+cd backend
+npm ci
+npm run dev
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+In another terminal, install dependencies and start the frontend:
+
+```sh
+cd frontend
+npm ci
+npm run dev
+```
+
+Set backend values in `backend/.env` using `backend/.env.example` as a guide.
+Set frontend values in `frontend/.env.development` or
+`frontend/.env.production`. Keep all environment files containing credentials
+out of Git.
+
+## Checks
+
+Run backend tests from `backend/` with `npm test`. Run frontend checks from
+`frontend/` with `npm run lint` and `npm run build`.
+
+## Payment deployment safety
+
+Before deploying the backend, back up the target database and run the explicit
+payment-index check from `backend/` with `MONGODB_URL` set to the intended
+database:
+
+```sh
+node scripts/ensurePaymentIndexes.mjs
+```
+
+The script reports duplicate string Razorpay order IDs, creates only the
+required unique partial index when it is missing, and verifies the result. It
+does not drop indexes or run `syncIndexes()`. Resolve any reported duplicates
+with a database administrator before retrying. Application startup also checks
+the index and will fail closed if it is missing or incompatible.
+
+Order notification delivery is tracked independently for the customer email,
+owner email, and WhatsApp message. Definite provider rejections are retried
+with bounded backoff. Ambiguous provider outcomes are held for reconciliation
+instead of being automatically resent.

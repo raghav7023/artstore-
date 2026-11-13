@@ -3,10 +3,15 @@ import crypto from 'crypto';
 import PaymentAttempt from '../models/PaymentAttempt.model.js';
 import Order from '../models/Order.model.js';
 import { RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET } from '../../Config.mjs';
-import { getDeliveryCharge } from '../config/delivery.config.js';
-import { products as catalogProducts } from '../data/products.data.js';
+import {
+  InvalidProductError,
+  PAYMENT_CURRENCY,
+  getOrCreateOrder,
+  paymentMatchesAttempt,
+  sanitizeAndCalculateAmount,
+} from '../utils/paymentOrder.utils.js';
 import { sendOrderEmails, verifyEmailConfiguration } from '../utils/emailService.js';
-import { sendWhatsAppNotification } from './order.controller.js';
+import { dispatchOrderNotifications } from '../workers/orderNotification.worker.js';
 
 // Lazily initialize Razorpay only if credentials are provided
 let razorpay = null;
@@ -20,39 +25,6 @@ const getRazorpayInstance = () => {
     }
   }
   return razorpay;
-};
-
-// Helper: calculate amount from products array (in paise) and sanitize product data against catalog
-const sanitizeAndCalculateAmount = (products) => {
-  let total = 0;
-  const sanitizedProducts = [];
-
-  for (const p of products) {
-    const qty = Math.min(100, Math.max(1, Math.floor(Number(p.quantity) || 1)));
-    const catalogItem = catalogProducts.find((item) => item.id === Number(p.id));
-
-    // Enforce authoritative catalog price if found; otherwise validate p.price
-    const price = catalogItem ? Number(catalogItem.price) : Math.max(0, Number(p.price) || 0);
-    const name = catalogItem ? catalogItem.name : (p.name || 'Product');
-    const image = catalogItem ? catalogItem.image : (p.image || '');
-    const category = catalogItem ? catalogItem.category : (p.category || '');
-    const subcategory = catalogItem ? catalogItem.subcategory : (p.subcategory || '');
-
-    total += qty * price;
-    sanitizedProducts.push({
-      id: p.id ? Number(p.id) : undefined,
-      name,
-      price,
-      quantity: qty,
-      image,
-      category,
-      subcategory,
-    });
-  }
-
-  const delivery = getDeliveryCharge(sanitizedProducts);
-  const amountInPaise = Math.round((total + delivery) * 100);
-  return { amountInPaise, sanitizedProducts };
 };
 
 // POST /api/payments/create-order or /api/create-order
@@ -70,8 +42,6 @@ export const createPaymentOrder = async (req, res) => {
       pincode,
       payment, // payment method selected
       products,
-      amount,
-      currency = 'INR',
       receipt,
     } = req.body;
 
@@ -111,7 +81,7 @@ export const createPaymentOrder = async (req, res) => {
     // Create Razorpay order (receipt max length is 40 chars)
     const options = {
       amount: amountInPaise,
-      currency: currency || 'INR',
+      currency: PAYMENT_CURRENCY,
       receipt: (receipt ? String(receipt) : `rcpt_${Date.now()}`).slice(0, 40),
       payment_capture: 1,
     };
@@ -125,7 +95,7 @@ export const createPaymentOrder = async (req, res) => {
         user: userId,
         razorpay_order_id: rOrder.id,
         amount: amountInPaise,
-        currency: currency || 'INR',
+        currency: PAYMENT_CURRENCY,
         products: orderProducts.length > 0 ? orderProducts : (products || []),
         customer: {
           name: name || '',
@@ -151,6 +121,9 @@ export const createPaymentOrder = async (req, res) => {
       attemptId: attempt ? attempt._id : undefined,
     });
   } catch (error) {
+    if (error instanceof InvalidProductError) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
     console.error('Create Payment Order Error:', error);
     res.status(500).json({ success: false, message: error.message || 'Unable to create payment order' });
   }
@@ -189,75 +162,47 @@ export const verifyPayment = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Invalid payment signature' });
     }
 
-    // Atomic idempotency: only proceed if we are the one to flip status to 'paid'
-    const attempt = await PaymentAttempt.findOneAndUpdate(
-      { razorpay_order_id: rOrderId, status: { $ne: 'paid' } },
-      { $set: { status: 'paid' } },
-      { new: true }
-    );
-
-    if (!attempt) {
-      // Either attempt doesn't exist, or it was already marked paid by a webhook
-      const existingAttempt = await PaymentAttempt.findOne({ razorpay_order_id: rOrderId });
-      if (!existingAttempt) {
-        return res.status(404).json({ success: false, message: 'Payment attempt not found' });
-      }
-      if (existingAttempt.status === 'paid') {
-        const existingOrder = await Order.findOne({ 'razorpay.order_id': rOrderId });
-
-        // Authorization check: ensure caller owns this attempt before returning existing order
-        const currentUserId = req.user?.id || req.user?._id;
-        if (existingAttempt.user && currentUserId && existingAttempt.user.toString() !== currentUserId.toString() && req.user?.role !== 'admin') {
-          return res.status(403).json({ success: false, message: 'Unauthorized verification attempt' });
-        }
-
-        // Retry any incomplete email notifications for the existing order (no duplicate order created)
-        if (existingOrder) {
-          const ownerSent = !!existingOrder.emailsSent?.owner;
-          const customerSent = !!existingOrder.emailsSent?.customer;
-          if (!ownerSent || !customerSent) {
-            console.log(`ℹ️ [verifyPayment] Retrying incomplete notifications for Order #${existingOrder._id} (owner:${ownerSent}, customer:${customerSent})`);
-            try {
-              const retryResult = await sendOrderEmails(existingOrder.toObject ? existingOrder.toObject() : existingOrder);
-              console.log('Email retry result (verify duplicate path):', retryResult);
-            } catch (retryErr) {
-              console.error('Non-critical email retry failure (verify duplicate path):', retryErr?.message || retryErr);
-            }
-          }
-        }
-
-        return res.status(200).json({
-          success: true,
-          message: 'Payment already processed',
-          order: existingOrder,
-        });
-      }
-      return res.status(500).json({ success: false, message: 'Payment verification failed' });
+    const paymentAttempt = await PaymentAttempt.findOne({ razorpay_order_id: rOrderId });
+    if (!paymentAttempt) {
+      return res.status(404).json({ success: false, message: 'Payment attempt not found' });
     }
 
-    // Authorization check: ensure caller owns this attempt
     const currentUserId = req.user?.id || req.user?._id;
-    if (attempt.user && currentUserId && attempt.user.toString() !== currentUserId.toString() && req.user?.role !== 'admin') {
-      // Note: We've already marked it as paid, which is technically correct since Razorpay confirmed it,
-      // but we block this specific user from seeing the result if they don't own it.
+    if (paymentAttempt.user && currentUserId && paymentAttempt.user.toString() !== currentUserId.toString() && req.user?.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'Unauthorized verification attempt' });
     }
 
-    // Create final Order record (store razorpay ids)
-    const newOrder = await Order.create({
-      user: attempt.user,
-      name: attempt.customer?.name || 'Customer',
-      email: attempt.customer?.email || 'N/A',
-      phone: attempt.customer?.phone || 'N/A',
-      address: attempt.customer?.address || 'N/A',
-      city: attempt.customer?.city || 'N/A',
-      state: attempt.customer?.state || '',
-      pincode: attempt.customer?.pincode || 'N/A',
+    const rzp = getRazorpayInstance();
+    if (!rzp) {
+      return res.status(500).json({ success: false, message: 'Payment gateway not configured' });
+    }
+
+    let gatewayPayment;
+    try {
+      gatewayPayment = await rzp.payments.fetch(rPaymentId);
+    } catch (error) {
+      console.error('Razorpay payment lookup error:', error.message);
+      return res.status(502).json({ success: false, message: 'Unable to verify payment with payment gateway' });
+    }
+
+    if (!paymentMatchesAttempt(gatewayPayment, paymentAttempt)) {
+      return res.status(400).json({ success: false, message: 'Payment details do not match the payment attempt' });
+    }
+
+    const wasAlreadyPaid = paymentAttempt.status === 'paid';
+    const { order: newOrder, created } = await getOrCreateOrder(Order, {
+      user: paymentAttempt.user,
+      name: paymentAttempt.customer?.name || 'Customer',
+      email: paymentAttempt.customer?.email || 'N/A',
+      phone: paymentAttempt.customer?.phone || 'N/A',
+      address: paymentAttempt.customer?.address || 'N/A',
+      city: paymentAttempt.customer?.city || 'N/A',
+      state: paymentAttempt.customer?.state || '',
+      pincode: paymentAttempt.customer?.pincode || 'N/A',
       payment: 'Razorpay',
-      products: attempt.products || [],
-      total: attempt.amount / 100,
+      products: paymentAttempt.products || [],
+      total: paymentAttempt.amount / 100,
       status: 'Processing',
-      // attach razorpay fields
       razorpay: {
         order_id: rOrderId,
         payment_id: rPaymentId,
@@ -265,21 +210,23 @@ export const verifyPayment = async (req, res) => {
       },
     });
 
-    // Send emails and WhatsApp alerts after order is saved — failures do NOT cancel the order
-    try {
-      const emailResult = await sendOrderEmails(newOrder.toObject());
-      console.log('Order notification email dispatch completed:', emailResult);
-    } catch (emailErr) {
-      console.error('Non-critical email dispatch failure:', emailErr?.message || emailErr);
+    const updatedAttempt = await PaymentAttempt.findOneAndUpdate(
+      { razorpay_order_id: rOrderId, status: { $ne: 'paid' } },
+      { $set: { status: 'paid' } },
+      { new: true }
+    );
+
+    if (updatedAttempt || created || wasAlreadyPaid) {
+      void dispatchOrderNotifications(newOrder._id).catch((notificationError) => {
+        console.error('Non-critical order notification dispatch failure:', notificationError?.message || notificationError);
+      });
     }
 
-    try {
-      await sendWhatsAppNotification(newOrder.toObject(), 'normal');
-    } catch (waErr) {
-      console.error('Non-critical WhatsApp dispatch failure:', waErr?.message || waErr);
-    }
-
-    res.status(200).json({ success: true, message: 'Payment verified and order created', order: newOrder });
+    res.status(200).json({
+      success: true,
+      message: created ? 'Payment verified and order created' : 'Payment already processed',
+      order: newOrder,
+    });
   } catch (error) {
     console.error('Verify Payment Error:', error);
     res.status(500).json({ success: false, message: 'Payment verification failed' });
@@ -311,7 +258,17 @@ export const resendOrderEmail = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Unauthorized to resend emails for this order' });
     }
 
-    const emailResult = await sendOrderEmails(order.toObject(), { force: true });
+    const emailResult = await sendOrderEmails(order.toObject(), { manualRetry: true });
+    const ambiguous = [emailResult.owner, emailResult.customer].some(
+      (result) => result.outcome === 'unknown' || result.reason === 'sending'
+    );
+    if (ambiguous) {
+      return res.status(409).json({
+        success: false,
+        message: 'One or more email delivery outcomes require provider reconciliation.',
+        emailResult,
+      });
+    }
     return res.status(200).json({ success: true, message: 'Order emails dispatched', emailResult });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
@@ -350,78 +307,66 @@ export const handleRazorpayWebhook = async (req, res) => {
 
     if (event === 'payment.captured' || event === 'order.paid') {
       const paymentEntity = req.body.payload?.payment?.entity;
-      const rOrderId = paymentEntity?.order_id || req.body.payload?.order?.entity?.id;
+      const orderEntity = req.body.payload?.order?.entity;
+      const rOrderId = paymentEntity?.order_id || orderEntity?.id;
       const rPaymentId = paymentEntity?.id;
 
       if (rOrderId) {
-        // Atomic lock on PaymentAttempt to prevent race conditions with verify endpoint
-        const attempt = await PaymentAttempt.findOneAndUpdate(
+        const paymentAttempt = await PaymentAttempt.findOne({ razorpay_order_id: rOrderId });
+        if (!paymentAttempt) {
+          return res.status(200).json({ success: true, message: 'Payment attempt not found' });
+        }
+
+        const webhookPayment = paymentEntity || {
+          order_id: orderEntity?.id,
+          amount: orderEntity?.amount_paid,
+          currency: orderEntity?.currency,
+          status: orderEntity?.status === 'paid' ? 'captured' : orderEntity?.status,
+        };
+        if (!paymentMatchesAttempt(webhookPayment, paymentAttempt)) {
+          console.warn('Razorpay webhook payment does not match payment attempt', rOrderId);
+          return res.status(400).json({ success: false, message: 'Payment details do not match the payment attempt' });
+        }
+
+        const wasAlreadyPaid = paymentAttempt.status === 'paid';
+        const paymentMethodDetail = paymentEntity?.method ? `Razorpay (${paymentEntity.method.toUpperCase()})` : 'Razorpay';
+        const { order: newOrder, created } = await getOrCreateOrder(Order, {
+          user: paymentAttempt.user,
+          name: paymentAttempt.customer?.name || 'Customer',
+          email: paymentAttempt.customer?.email || 'N/A',
+          phone: paymentAttempt.customer?.phone || 'N/A',
+          address: paymentAttempt.customer?.address || 'N/A',
+          city: paymentAttempt.customer?.city || 'N/A',
+          state: paymentAttempt.customer?.state || '',
+          pincode: paymentAttempt.customer?.pincode || 'N/A',
+          payment: paymentMethodDetail,
+          products: paymentAttempt.products || [],
+          total: paymentAttempt.amount / 100,
+          status: 'Processing',
+          razorpay: {
+            order_id: rOrderId,
+            payment_id: rPaymentId || 'webhook_captured',
+            signature,
+          },
+        });
+
+        const updatedAttempt = await PaymentAttempt.findOneAndUpdate(
           { razorpay_order_id: rOrderId, status: { $ne: 'paid' } },
           { $set: { status: 'paid' } },
           { new: true }
         );
 
-        if (!attempt) {
-          // If we didn't update it, it was already processed (or doesn't exist)
-          const existingOrder = await Order.findOne({ 'razorpay.order_id': rOrderId });
-          if (existingOrder) {
-            console.log(`ℹ️ [Webhook] Order already processed for Razorpay Order #${rOrderId}`);
-
-            // Retry any incomplete email notifications (no duplicate order created)
-            const ownerSent = !!existingOrder.emailsSent?.owner;
-            const customerSent = !!existingOrder.emailsSent?.customer;
-            if (!ownerSent || !customerSent) {
-              console.log(`ℹ️ [Webhook] Retrying incomplete notifications for Order #${existingOrder._id} (owner:${ownerSent}, customer:${customerSent})`);
-              try {
-                const retryResult = await sendOrderEmails(existingOrder.toObject ? existingOrder.toObject() : existingOrder);
-                console.log('Email retry result (webhook duplicate path):', retryResult);
-              } catch (retryErr) {
-                console.error('Non-critical email retry failure (webhook duplicate path):', retryErr?.message || retryErr);
-              }
-            }
-
-            return res.status(200).json({ success: true, message: 'Order already processed', orderId: existingOrder._id });
-          }
-          return res.status(200).json({ success: true, message: 'Order processing elsewhere or attempt not found' });
+        if (updatedAttempt || created || wasAlreadyPaid) {
+          void dispatchOrderNotifications(newOrder._id).catch((notificationError) => {
+            console.error('Non-critical webhook notification dispatch failure:', notificationError?.message || notificationError);
+          });
         }
 
-          const paymentMethodDetail = paymentEntity?.method ? `Razorpay (${paymentEntity.method.toUpperCase()})` : 'Razorpay';
-
-          const newOrder = await Order.create({
-            user: attempt.user,
-            name: attempt.customer?.name || 'Customer',
-            email: attempt.customer?.email || 'N/A',
-            phone: attempt.customer?.phone || 'N/A',
-            address: attempt.customer?.address || 'N/A',
-            city: attempt.customer?.city || 'N/A',
-            state: attempt.customer?.state || '',
-            pincode: attempt.customer?.pincode || 'N/A',
-            payment: paymentMethodDetail,
-            products: attempt.products || [],
-            total: attempt.amount / 100,
-            status: 'Processing',
-            razorpay: {
-              order_id: rOrderId,
-              payment_id: rPaymentId || 'webhook_captured',
-              signature: signature,
-            },
-          });
-
-          // Dispatch confirmation emails safely
-          try {
-            const emailResult = await sendOrderEmails(newOrder.toObject());
-            console.log('Webhook order confirmation email dispatch completed:', emailResult);
-          } catch (emailErr) {
-            console.error('Non-critical email dispatch failure in webhook:', emailErr?.message || emailErr);
-          }
-
-          try {
-            await sendWhatsAppNotification(newOrder.toObject(), 'normal');
-          } catch (waErr) {
-            console.error('Non-critical WhatsApp dispatch failure in webhook:', waErr?.message || waErr);
-          }
-
-          return res.status(200).json({ success: true, message: 'Payment verified and order created via webhook', orderId: newOrder._id });
+        return res.status(200).json({
+          success: true,
+          message: created ? 'Payment verified and order created via webhook' : 'Order already processed',
+          orderId: newOrder._id,
+        });
       }
     }
 
