@@ -1,177 +1,116 @@
-import { describe, it, beforeEach } from 'node:test';
-import assert from 'node:assert/strict';
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+import { sendCustomerOrderEmail, sendOrderEmails } from "../src/utils/emailService.js";
+import { getNotificationIdempotencyKey } from "../src/utils/notificationDelivery.utils.js";
 
-// Import modules under test
-import {
-  sendOrderEmails,
-  sendOwnerOrderEmail,
-  sendCustomerOrderEmail,
-  sendMailWithFallback,
-} from '../src/utils/emailService.js';
-import Order from '../src/models/Order.model.js';
-
-describe('Artstore Email Notification & Resilience Suite', () => {
-  // Test fixture order factory
-  const createMockOrder = (overrides = {}) => ({
-    _id: '670000000000000000000001',
-    name: 'Test Customer',
-    email: 'customer@example.com',
-    phone: '9876543210',
-    address: '123 Art Studio Lane',
-    city: 'Jaipur',
-    pincode: '302001',
-    payment: 'Razorpay',
-    products: [
-      { id: 101, name: 'Handmade Canvas Art', price: 999, quantity: 1 },
-    ],
-    total: 999,
-    status: 'Processing',
-    emailsSent: {
-      customer: false,
-      owner: false,
+const createMockOrder = () => ({
+    _id: "order-test-1",
+    name: "Test Customer",
+    email: "customer@example.test",
+    phone: "15551112222",
+    address: "Test address",
+    city: "Test city",
+    pincode: "00000",
+    payment: "Razorpay",
+    products: [{ id: 1, name: "Test product", price: 10, quantity: 1 }],
+    total: 10,
+    emailsSent: { customer: false, owner: false },
+    notifications: {
+        customerEmail: { status: "pending", attemptCount: 0 },
+        ownerEmail: { status: "pending", attemptCount: 0 },
+        whatsapp: { status: "pending", attemptCount: 0 },
     },
-    ...overrides,
-  });
+});
 
-  describe('1. Missing / Invalid Configuration Tests', () => {
-    it('should return missing_customer_email or invalid_email when customer email is invalid', async () => {
-      const order = createMockOrder({ email: 'not-an-email' });
-      const result = await sendCustomerOrderEmail(order);
-      assert.strictEqual(result.success, false);
-      assert.strictEqual(result.reason, 'invalid_email');
-    });
+const getPath = (object, path) =>
+    path.split(".").reduce((value, key) => value?.[key], object);
 
-    it('should safely handle missing order object in sendOrderEmails', async () => {
-      const result = await sendOrderEmails(null);
-      assert.strictEqual(result.success, false);
-      assert.strictEqual(result.reason, 'no_order');
-    });
-  });
+const setPath = (object, path, value) => {
+    const keys = path.split(".");
+    const lastKey = keys.pop();
+    const parent = keys.reduce((value, key) => value[key] ||= {}, object);
+    parent[lastKey] = value;
+};
 
-  describe('2. Independent Failure Isolation & Flag Persistence', () => {
-    it('one notification failure should not prevent the other notification from being attempted', async () => {
-      // Mock Order.updateOne to record DB updates
-      let updatedFields = null;
-      const originalUpdateOne = Order.updateOne;
-      Order.updateOne = async (query, update) => {
-        updatedFields = update.$set;
-        return { acknowledged: true, modifiedCount: 1 };
-      };
-
-      try {
-        // Customer email is invalid -> customer will fail, but owner will be attempted
-        const order = createMockOrder({
-          _id: `test_iso_${Date.now()}`,
-          email: '', // Missing email
-        });
-
-        const result = await sendOrderEmails(order);
-
-        // Customer notification must have failed cleanly
-        assert.strictEqual(result.customer.success, false);
-        assert.strictEqual(result.customer.reason, 'invalid_email');
-
-        // Customer DB flag must be false, without throwing an unhandled rejection
-        assert.strictEqual(updatedFields['emailsSent.customer'], false);
-      } finally {
-        Order.updateOne = originalUpdateOne;
-      }
-    });
-
-    it('should preserve previously successful flags when a notification is skipped on retry (Critical Regression)', async () => {
-      let updatedFields = null;
-      const originalUpdateOne = Order.updateOne;
-      Order.updateOne = async (query, update) => {
-        updatedFields = update.$set;
-        return { acknowledged: true, modifiedCount: 1 };
-      };
-
-      try {
-        // Simulate order where OWNER was already successfully sent, but CUSTOMER is pending
-        const order = createMockOrder({
-          _id: `test_preserve_${Date.now()}`,
-          emailsSent: {
-            owner: true,
-            customer: false,
-          },
-        });
-
-        const result = await sendOrderEmails(order, { force: false });
-
-        // Owner notification should have been SKIPPED
-        assert.strictEqual(result.owner.skipped, true);
-
-        // CRITICAL ASSERTION: The DB update for emailsSent.owner must PRESERVE true, NOT set to false
-        assert.strictEqual(
-          updatedFields['emailsSent.owner'],
-          true,
-          'emailsSent.owner must remain TRUE when skipped on retry'
+const createMockOrderModel = (order) => ({
+    async findOneAndUpdate(filter, update) {
+        if (filter._id !== order._id) return null;
+        const statusPath = Object.keys(update.$set).find((path) =>
+            path.endsWith(".status")
         );
-      } finally {
-        Order.updateOne = originalUpdateOne;
-      }
+        const statePath = statusPath.slice(0, -".status".length);
+        const state = getPath(order, statePath);
+        if (!["pending", "failed"].includes(state.status) || state.attemptCount >= 5) {
+            return null;
+        }
+        for (const [path, value] of Object.entries(update.$set)) {
+            setPath(order, path, value);
+        }
+        for (const [path, value] of Object.entries(update.$inc || {})) {
+            setPath(order, path, getPath(order, path) + value);
+        }
+        return order;
+    },
+    async updateOne(filter, update) {
+        const tokenPath = Object.keys(filter).find((path) =>
+            path.endsWith(".leaseToken")
+        );
+        const statePath = tokenPath.slice(0, -".leaseToken".length);
+        if (
+            filter._id !== order._id ||
+            getPath(order, tokenPath) !== filter[tokenPath] ||
+            !["sending", "unknown"].includes(getPath(order, `${statePath}.status`))
+        ) {
+            return { modifiedCount: 0 };
+        }
+        for (const [path, value] of Object.entries(update.$set || {})) {
+            setPath(order, path, value);
+        }
+        return { modifiedCount: 1 };
+    },
+});
+
+describe("Isolated order email notification tests", () => {
+    it("does not contact a provider for an invalid customer email", async () => {
+        const result = await sendCustomerOrderEmail({
+            ...createMockOrder(),
+            email: "not-an-email",
+        });
+        assert.equal(result.success, false);
+        assert.equal(result.reason, "invalid_email");
     });
 
-    it('should skip duplicate notifications when both flags are already true', async () => {
-      const order = createMockOrder({
-        _id: `test_both_true_${Date.now()}`,
-        emailsSent: {
-          owner: true,
-          customer: true,
-        },
-      });
-
-      const result = await sendOrderEmails(order, { force: false });
-      assert.strictEqual(result.success, true);
-      assert.strictEqual(result.skipped, true);
-      assert.strictEqual(result.reason, 'already_processed_db');
-    });
-  });
-
-  describe('3. Controller Duplicate Retry Paths (Verification & Webhook)', () => {
-    it('verifyPayment duplicate path checks existingOrder.emailsSent before returning', () => {
-      // Functional assertion on the logic:
-      // If owner is true and customer is false, retry must be triggered
-      const existingOrder = createMockOrder({
-        emailsSent: { owner: true, customer: false },
-      });
-      const ownerSent = !!existingOrder.emailsSent?.owner;
-      const customerSent = !!existingOrder.emailsSent?.customer;
-      const needsRetry = !ownerSent || !customerSent;
-
-      assert.strictEqual(needsRetry, true, 'Incomplete notification must trigger retry');
+    it("does not fail when called without an order", async () => {
+        const result = await sendOrderEmails(null);
+        assert.equal(result.success, false);
+        assert.equal(result.reason, "no_order");
     });
 
-    it('verifyPayment duplicate path does NOT retry if both flags are already true', () => {
-      const existingOrder = createMockOrder({
-        emailsSent: { owner: true, customer: true },
-      });
-      const ownerSent = !!existingOrder.emailsSent?.owner;
-      const customerSent = !!existingOrder.emailsSent?.customer;
-      const needsRetry = !ownerSent || !customerSent;
+    it("attempts recipients independently and preserves successful legacy flags", async () => {
+        const order = createMockOrder();
+        const model = createMockOrderModel(order);
+        let ownerKey;
+        let customerKey;
 
-      assert.strictEqual(needsRetry, false, 'Complete notifications must not trigger retry');
+        const result = await sendOrderEmails(order, {
+            orderModel: model,
+            sendOwner: async (_order, { idempotencyKey }) => {
+                ownerKey = idempotencyKey;
+                return { success: true, outcome: "sent", messageId: "owner-id" };
+            },
+            sendCustomer: async (_order, { idempotencyKey }) => {
+                customerKey = idempotencyKey;
+                return { success: false, outcome: "failed", error: "provider rejected" };
+            },
+        });
+
+        assert.equal(result.owner.outcome, "sent");
+        assert.equal(result.customer.outcome, "failed");
+        assert.equal(order.emailsSent.owner, true);
+        assert.equal(order.emailsSent.customer, false);
+        assert.ok(ownerKey.startsWith("artstore-"));
+        assert.ok(customerKey.startsWith("artstore-"));
+        assert.equal(ownerKey, getNotificationIdempotencyKey(order._id, "ownerEmail"));
+        assert.notEqual(ownerKey, customerKey);
     });
-  });
-
-  describe('4. Resend Error Propagation & API Acceptance Distinction', () => {
-    it('sendMailWithFallback must not claim confirmed delivery upon API acceptance', async () => {
-      // When Resend or SMTP succeeds, the status/provider distinguishes API acceptance
-      // If no provider is configured, returns explicit error reason
-      const result = await sendMailWithFallback({
-        to: 'invalid-address',
-        subject: 'Test Subject',
-        text: 'Test content',
-      });
-
-      // Without live keys or with invalid recipient, it must not return success: true
-      // It must return an explicit failure reason or error message
-      if (!result.success) {
-        assert.ok(result.reason || result.error, 'Failure must include an explicit reason or error');
-      } else {
-        assert.ok(result.messageId, 'Success must provide a provider messageId');
-        assert.ok(result.provider, 'Success must state the provider used');
-      }
-    });
-  });
 });

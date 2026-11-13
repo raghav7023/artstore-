@@ -16,7 +16,7 @@ const emailLogSchema = new mongoose.Schema(
     providerMessageId: { type: String, default: '' },
     status: {
       type: String,
-      enum: ['pending', 'sent', 'failed', 'delivered', 'bounced', 'complained'],
+      enum: ['pending', 'sent', 'failed', 'unknown', 'delivered', 'bounced', 'complained'],
       default: 'pending',
     },
     errorMessage: { type: String, default: '' },

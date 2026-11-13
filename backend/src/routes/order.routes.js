@@ -1,6 +1,7 @@
 import express from "express";
 import {
     createOrder,
+    getOrderById,
     getOrders,
 } from "../controllers/order.controller.js";
 import { protect } from "../middleware/auth.middleware.js";
@@ -13,5 +14,6 @@ router.post("/", protect, createOrder);
 
 // Sirf admin saare orders dekh sakta hai
 router.get("/", protect, getOrders);
+router.get("/:id", protect, getOrderById);
 
 export default router;

@@ -1,45 +1,156 @@
 import Order from "../models/Order.model.js";
 import { WHATSAPP_ACCESS_TOKEN, WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_TO_NUMBER } from '../../Config.mjs';
-import { getDeliveryCharge } from '../config/delivery.config.js';
-import { sendOrderEmails } from '../utils/emailService.js';
+import {
+    claimNotification,
+    sanitizeNotificationError,
+    settleNotification,
+} from '../utils/notificationDelivery.utils.js';
 
-export const sendWhatsAppNotification = async (orderData, type = 'normal') => {
-    if (!WHATSAPP_ACCESS_TOKEN || !WHATSAPP_PHONE_NUMBER_ID || !WHATSAPP_TO_NUMBER) {
-        console.log('WhatsApp notification skipped: missing credentials.');
-        return;
+const WHATSAPP_REQUEST_TIMEOUT_MS = 15 * 1000;
+
+const sendWhatsAppMessage = async (
+    orderData,
+    {
+        fetchImpl = fetch,
+        type = 'normal',
+        accessToken = WHATSAPP_ACCESS_TOKEN,
+        phoneNumberId = WHATSAPP_PHONE_NUMBER_ID,
+        toNumber = WHATSAPP_TO_NUMBER,
+        apiVersion = process.env.WHATSAPP_API_VERSION || 'v19.0',
+        timeoutMs = WHATSAPP_REQUEST_TIMEOUT_MS,
+    } = {}
+) => {
+    if (!accessToken || !phoneNumberId || !toNumber) {
+        return {
+            success: false,
+            outcome: 'failed',
+            error: 'WhatsApp notification is not configured',
+        };
     }
 
+    const controller = new AbortController();
+    let timeoutId;
     try {
         const message = type === 'custom'
             ? `🎨 New custom order received\n\nCustomer: ${orderData.name}\nEmail: ${orderData.email}\nPhone: ${orderData.phone}\nProduct: ${orderData.product}\nColor: ${orderData.color || 'N/A'}\nBudget: ₹${orderData.budget || 0}\nDelivery: ${orderData.delivery || 'N/A'}\nMessage: ${orderData.message}`
             : `🛍️ New order received\n\nCustomer: ${orderData.name}\nEmail: ${orderData.email}\nPhone: ${orderData.phone}\nAddress: ${orderData.address}, ${orderData.city} - ${orderData.pincode}\nPayment: ${orderData.payment}\nProducts: ${orderData.products.map((p) => `${p.name} x ${p.quantity}`).join(', ')}\nTotal: ₹${orderData.total}`;
 
-        const response = await fetch(`https://graph.facebook.com/${process.env.WHATSAPP_API_VERSION || 'v19.0'}/${WHATSAPP_PHONE_NUMBER_ID}/messages`, {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                messaging_product: 'whatsapp',
-                to: WHATSAPP_TO_NUMBER,
-                type: 'text',
-                text: {
-                    body: message,
+        const request = (async () => {
+            const response = await fetchImpl(`https://graph.facebook.com/${apiVersion}/${phoneNumberId}/messages`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
                 },
-            }),
+                body: JSON.stringify({
+                    messaging_product: 'whatsapp',
+                    to: toNumber,
+                    type: 'text',
+                    text: {
+                        body: message,
+                    },
+                }),
+                signal: controller.signal,
+            });
+
+            if (!response.ok) {
+                let providerError = `WhatsApp provider returned HTTP ${response.status}`;
+                try {
+                    const data = await response.json();
+                    providerError = data?.error?.message || providerError;
+                } catch {
+                    // The HTTP status still determines the provider outcome.
+                }
+                return {
+                    success: false,
+                    outcome: response.status >= 500 ? 'unknown' : 'failed',
+                    error: sanitizeNotificationError(providerError),
+                };
+            }
+
+            let data = {};
+            try {
+                data = await response.json();
+            } catch {
+                // A successful HTTP response confirms provider acceptance.
+            }
+            return {
+                success: true,
+                outcome: 'sent',
+                messageId: data?.messages?.[0]?.id,
+            };
+        })();
+
+        const timeout = new Promise((_, reject) => {
+            timeoutId = setTimeout(() => {
+                controller.abort();
+                reject(new Error('WhatsApp request timed out'));
+            }, timeoutMs);
         });
 
-        const data = await response.json();
-        if (!response.ok) {
-            console.error('WhatsApp API error:', data);
-            return;
-        }
-
-        console.log('WhatsApp notification sent successfully.', data);
+        return await Promise.race([request, timeout]);
     } catch (error) {
-        console.error('WhatsApp notification failed:', error.message);
+        return {
+            success: false,
+            outcome: 'unknown',
+            error: sanitizeNotificationError(error),
+        };
+    } finally {
+        clearTimeout(timeoutId);
     }
+};
+
+export const sendWhatsAppNotification = async (
+    orderData,
+    type = 'normal',
+    {
+        orderModel = Order,
+        fetchImpl = fetch,
+        whatsappConfig,
+        now = new Date(),
+        timeoutMs = WHATSAPP_REQUEST_TIMEOUT_MS,
+    } = {}
+) => {
+    if (type === 'custom') {
+        return sendWhatsAppMessage(orderData, {
+            ...whatsappConfig,
+            fetchImpl,
+            type,
+            timeoutMs,
+        });
+    }
+
+    if (type !== 'normal' || !orderData?._id) {
+        return { success: false, skipped: true, reason: 'persistent_order_required' };
+    }
+
+    if (!orderData.notifications?.whatsapp) {
+        return { success: false, skipped: true, reason: 'legacy_delivery_state_missing' };
+    }
+
+    const claim = await claimNotification(orderModel, orderData._id, 'whatsapp', { now });
+    if (!claim) {
+        const status = orderData.notifications.whatsapp.status;
+        return {
+            success: status === 'sent',
+            skipped: true,
+            reason: status || 'not_claimable',
+            ...(status === 'unknown' ? { outcome: 'unknown' } : {}),
+        };
+    }
+
+    const result = await sendWhatsAppMessage(claim.order, {
+        ...whatsappConfig,
+        fetchImpl,
+        timeoutMs,
+    });
+    await settleNotification(orderModel, orderData._id, 'whatsapp', claim.token, result.outcome, {
+        now: new Date(),
+        error: result.error,
+        providerMessageId: result.messageId,
+        attemptCount: claim.attemptCount,
+    });
+    return result;
 };
 
 // ==========================================
@@ -85,4 +196,38 @@ export const getOrders = async (req, res) => {
 
     }
 
+};
+
+export const getOrderById = async (req, res) => {
+    try {
+        const order = await Order.findOne({
+            _id: req.params.id,
+            user: req.user.id,
+        });
+
+        if (!order) {
+            return res.status(404).json({
+                success: false,
+                message: "Order not found.",
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            order,
+        });
+    } catch (error) {
+        if (error?.name === "CastError") {
+            return res.status(404).json({
+                success: false,
+                message: "Order not found.",
+            });
+        }
+
+        console.error("Error fetching order details:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Unable to fetch order details.",
+        });
+    }
 };
