@@ -7,7 +7,7 @@
 // ==========================================
 
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import './Authentication.css';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:2026').replace(/\/+$/, '');
@@ -21,7 +21,8 @@ export default function Authentication() {
   // [value, setValue] = Current value aur use change karne ka function
 
   // 'signup' ya 'signin' - kaunsa form dikhana hai
-  const [activeTab, setActiveTab] = useState('signup');
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState(location.state?.from ? 'signin' : 'signup');
 
   // Form fields ka data - sab ek object mein
   const [formData, setFormData] = useState({
@@ -166,9 +167,16 @@ export default function Authentication() {
 
         setSuccess(data.message);
 
-        // 1.5 second baad Home pe redirect karo
+        const requestedPath = location.state?.from;
+        const destination = data.user?.role === 'admin'
+          && typeof requestedPath === 'string'
+          && requestedPath.startsWith('/')
+          && !requestedPath.startsWith('//')
+          ? requestedPath
+          : '/';
+
         setTimeout(() => {
-          navigate('/');
+          navigate(destination, { replace: true });
         }, 1500);
       } else {
         const errorMessage = data.errors && Array.isArray(data.errors) && data.errors.length > 0
