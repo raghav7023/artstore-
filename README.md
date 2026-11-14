@@ -32,6 +32,11 @@ Set frontend values in `frontend/.env.development` or
 `frontend/.env.production`. Keep all environment files containing credentials
 out of Git.
 
+Browser authentication is origin-scoped: signing in on the Vercel hostname does
+not sign you in on `artstorestudio.com`, so sign in separately on each domain.
+Admin pages verify the session with the backend, and admin API authorization
+continues to enforce the JWT and database role.
+
 ## Checks
 
 Run backend tests from `backend/` with `npm test`. Run frontend checks from

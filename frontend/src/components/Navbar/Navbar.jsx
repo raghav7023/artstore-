@@ -7,6 +7,14 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./Navbar.css";
 
+const getStoredUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem("artstore_user")) || null;
+  } catch {
+    return null;
+  }
+};
+
 export default function Navbar() {
 
   // Navigation
@@ -14,7 +22,7 @@ export default function Navbar() {
   const [searchText, setSearchText] = useState('');
 
   // Logged in user
-  const user = JSON.parse(localStorage.getItem("artstore_user"));
+  const user = getStoredUser();
 
   // Logout Function
   const handleLogout = () => {

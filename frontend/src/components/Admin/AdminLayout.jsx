@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import './AdminLayout.css';
 
@@ -20,37 +20,55 @@ export default function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [authRetry, setAuthRetry] = useState(0);
+  const requestedPath = useRef(`${location.pathname}${location.search}${location.hash}`);
 
   useEffect(() => {
     const checkAuth = async () => {
+      const token = localStorage.getItem('artstore_token');
+      if (!token) {
+        navigate('/signin', {
+          replace: true,
+          state: { from: requestedPath.current },
+        });
+        return;
+      }
+
       try {
-        const token = localStorage.getItem('artstore_token');
-        const storedUser = JSON.parse(localStorage.getItem('artstore_user') || 'null');
-
-        if (!token || !storedUser || storedUser.role !== 'admin') {
-          navigate('/', { replace: true });
-          return;
-        }
-
-        // Verify with backend
         const res = await fetch(`${API_BASE_URL}/api/auth/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        const data = await res.json();
+        const data = await res.json().catch(() => null);
 
-        if (!res.ok || !data.success || data.user?.role !== 'admin') {
+        if (res.status === 401 || res.status === 404) {
+          localStorage.removeItem('artstore_token');
+          localStorage.removeItem('artstore_user');
+          navigate('/signin', {
+            replace: true,
+            state: { from: requestedPath.current },
+          });
+          return;
+        }
+
+        if (!res.ok || !data?.success || !data.user) {
+          throw new Error(data?.message || 'Unable to verify admin access.');
+        }
+
+        if (data.user.role !== 'admin') {
           navigate('/', { replace: true });
           return;
         }
 
         setUser(data.user);
+        localStorage.setItem('artstore_user', JSON.stringify(data.user));
         setAuthChecked(true);
-      } catch {
-        navigate('/', { replace: true });
+      } catch (error) {
+        setAuthError(error.message || 'Unable to verify admin access. Please try again.');
       }
     };
     checkAuth();
-  }, [navigate]);
+  }, [navigate, authRetry]);
 
   const handleLogout = () => {
     localStorage.removeItem('artstore_token');
@@ -61,8 +79,20 @@ export default function AdminLayout() {
   if (!authChecked) {
     return (
       <div className="admin-loading">
-        <div className="admin-loading-spinner"></div>
-        <p>Verifying admin access...</p>
+        {!authError && <div className="admin-loading-spinner"></div>}
+        {authError ? (
+          <>
+            <p role="alert">{authError}</p>
+            <button onClick={() => {
+              setAuthError('');
+              setAuthRetry((retry) => retry + 1);
+            }}>
+              Try again
+            </button>
+          </>
+        ) : (
+          <p>Verifying admin access...</p>
+        )}
       </div>
     );
   }
