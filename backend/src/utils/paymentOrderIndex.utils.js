@@ -3,6 +3,8 @@ export const PAYMENT_ORDER_INDEX_KEY = Object.freeze({ "razorpay.order_id": 1 })
 export const PAYMENT_ORDER_PARTIAL_FILTER = Object.freeze({
     "razorpay.order_id": Object.freeze({ $type: "string" }),
 });
+export const PAYMENT_ATTEMPT_ORDER_INDEX_NAME = "razorpay_order_id_1";
+export const PAYMENT_ATTEMPT_ORDER_INDEX_KEY = Object.freeze({ razorpay_order_id: 1 });
 
 const hasExpectedKey = (index) => {
     const keys = Object.entries(index?.key || {});
@@ -34,6 +36,19 @@ export const isValidPaymentOrderIndex = (index) =>
     index.unique === true &&
     hasExpectedPartialFilter(index);
 
+const hasExpectedPaymentAttemptKey = (index) => {
+    const keys = Object.entries(index?.key || {});
+    return keys.length === 1 &&
+        keys[0][0] === "razorpay_order_id" &&
+        keys[0][1] === 1;
+};
+
+export const isValidPaymentAttemptOrderIndex = (index) =>
+    hasExpectedPaymentAttemptKey(index) &&
+    index.unique === true &&
+    index.sparse !== true &&
+    !index.partialFilterExpression;
+
 export const findDuplicateRazorpayOrderIds = async (collection) => {
     try {
         return await collection.aggregate([
@@ -53,6 +68,31 @@ export const findDuplicateRazorpayOrderIds = async (collection) => {
             {
                 $match: {
                     count: { $gt: 1 },
+                },
+            },
+        ]).toArray();
+    } catch (error) {
+        if (isMissingCollectionError(error)) return [];
+        throw error;
+    }
+};
+
+export const findPaymentAttemptOrderIdIssues = async (collection) => {
+    try {
+        return await collection.aggregate([
+            {
+                $group: {
+                    _id: "$razorpay_order_id",
+                    valueType: { $first: { $type: "$razorpay_order_id" } },
+                    count: { $sum: 1 },
+                },
+            },
+            {
+                $match: {
+                    $or: [
+                        { valueType: { $ne: "string" } },
+                        { count: { $gt: 1 } },
+                    ],
                 },
             },
         ]).toArray();
@@ -102,4 +142,50 @@ export const ensurePaymentOrderIndex = async (collection) => {
         partialFilterExpression: PAYMENT_ORDER_PARTIAL_FILTER,
     });
     return assertPaymentOrderIndex(collection);
+};
+
+export const assertPaymentAttemptOrderIndex = async (collection) => {
+    const indexes = await getIndexes(collection);
+    const matchingKey = indexes.filter(hasExpectedPaymentAttemptKey);
+    const validIndex = matchingKey.find(isValidPaymentAttemptOrderIndex);
+    if (validIndex) return validIndex;
+
+    if (matchingKey.length) {
+        throw new Error(
+            "The PaymentAttempt Razorpay order ID index exists with incompatible options"
+        );
+    }
+    throw new Error("The required PaymentAttempt Razorpay order ID index is missing");
+};
+
+export const ensurePaymentAttemptOrderIndex = async (collection) => {
+    const indexes = await getIndexes(collection);
+    const matchingKey = indexes.filter(hasExpectedPaymentAttemptKey);
+    const validIndex = matchingKey.find(isValidPaymentAttemptOrderIndex);
+    if (validIndex) return validIndex;
+
+    if (matchingKey.length) {
+        throw new Error(
+            "The PaymentAttempt Razorpay order ID index exists with incompatible options; no index was changed"
+        );
+    }
+
+    const issues = await findPaymentAttemptOrderIdIssues(collection);
+    if (issues.length) {
+        const summary = issues
+            .map(({ _id, valueType, count }) => {
+                const value = valueType === "missing" ? "<missing>" : String(_id);
+                return `${value} (${valueType}, ${count} record${count === 1 ? "" : "s"})`;
+            })
+            .join(", ");
+        throw new Error(
+            `PaymentAttempt Razorpay order IDs must be valid and unique before creating the index: ${summary}`
+        );
+    }
+
+    await collection.createIndex(PAYMENT_ATTEMPT_ORDER_INDEX_KEY, {
+        name: PAYMENT_ATTEMPT_ORDER_INDEX_NAME,
+        unique: true,
+    });
+    return assertPaymentAttemptOrderIndex(collection);
 };

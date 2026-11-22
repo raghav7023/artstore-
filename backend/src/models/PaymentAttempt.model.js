@@ -34,7 +34,7 @@ const paymentAttemptSchema = new mongoose.Schema(
       default: "created",
     },
   },
-  { timestamps: true }
+  { timestamps: true, autoIndex: false }
 );
 
 export default mongoose.models.PaymentAttempt || mongoose.model("PaymentAttempt", paymentAttemptSchema);
