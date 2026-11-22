@@ -52,11 +52,14 @@ database:
 node scripts/ensurePaymentIndexes.mjs
 ```
 
-The script reports duplicate string Razorpay order IDs, creates only the
-required unique partial index when it is missing, and verifies the result. It
-does not drop indexes or run `syncIndexes()`. Resolve any reported duplicates
-with a database administrator before retrying. Application startup also checks
-the index and will fail closed if it is missing or incompatible.
+The script reports duplicate string Razorpay order IDs and invalid or duplicate
+payment-attempt IDs, creates only the required unique indexes when they are
+missing, and verifies the results. It does not drop indexes, alter records, or
+run `syncIndexes()`. Resolve any reported data conflicts with a database
+administrator before retrying. Application startup performs the same
+idempotent initialization after connecting to MongoDB and before opening the
+HTTP server; it fails closed if an existing index is incompatible or the data
+cannot safely support the required uniqueness constraints.
 
 Order notification delivery is tracked independently for the customer email,
 owner email, and WhatsApp message. Definite provider rejections are retried
